@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"sync/atomic"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -16,13 +17,15 @@ import (
 )
 
 // S3 is the AWS S3 (or S3-compatible endpoint) Storage implementation.
+// noCopyObject is set once the provider answers CopyObject with NotImplemented.
 type S3 struct {
-	client     *s3.Client
-	uploader   *manager.Uploader
-	downloader *manager.Downloader
-	bucket     string
-	errs       errorTranslator
-	trace      tracer
+	client       *s3.Client
+	uploader     *manager.Uploader
+	downloader   *manager.Downloader
+	bucket       string
+	errs         errorTranslator
+	noCopyObject atomic.Bool
+	trace        tracer
 }
 
 // NewS3 builds a client from explicit credentials; ambient AWS profiles are never consulted.
@@ -39,6 +42,7 @@ func NewS3(ctx context.Context, s Settings) (Storage, error) {
 		if s.Endpoint != "" {
 			o.BaseEndpoint = aws.String(s.Endpoint)
 			o.UsePathStyle = true
+			o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
 		}
 	})
 	uploader := manager.NewUploader(client, func(u *manager.Uploader) {

@@ -35,17 +35,38 @@ go install github.com/ycniuqton/hop/cmd/hop@latest
 
 ## 60-second quickstart
 
-**1. Make a bucket and a dedicated IAM user.** Use a user that can reach only that one bucket. hop prints the minimal policy for you:
+**1. Make a bucket and an access key** at your storage provider: Bizfly Cloud, Amazon S3, or any S3-compatible service. If you use Amazon S3, hop prints a minimal IAM policy for you:
 
 ```bash
 hop init --print-policy --bucket my-hop
 ```
 
-**2. Create the workspace on the first machine:**
+**2. Create the workspace on the first machine.** Run `hop init` with no flags and answer the questions:
+
+```text
+$ hop init
+Storage provider:
+  1) Bizfly Cloud
+  2) Amazon S3
+  3) Other S3-compatible
+Choose [1]:
+Bucket URL or name: https://hop-cli.hcm.ss.bfcplatform.vn
+Access key: YOUR_ACCESS_KEY
+Secret key:
+Key prefix (optional):
+Device name [laptop]:
+✔ Created hop workspace on Bizfly Cloud in hop-cli/ as "laptop".
+Next: run 'hop invite' to add another machine.
+```
+
+The secret key is never echoed. If `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set, they are used as the defaults.
+
+You can skip the questions with flags:
 
 ```bash
-export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=eu-west-1
-hop init --bucket my-hop --name laptop
+hop init --url https://hop-cli.hcm.ss.bfcplatform.vn --name laptop       # Bizfly Cloud
+hop init --provider aws --bucket my-hop --region eu-west-1 --name laptop # Amazon S3
+hop init --endpoint http://minio.local:9000 --bucket my-hop --name lab   # any S3-compatible
 ```
 
 **3. Add each other machine.** On the first machine, run:
@@ -182,15 +203,19 @@ Every device holds **the same S3 keys**. The real security boundary is the IAM u
 - **Files are not encrypted by hop.** S3 server-side encryption still applies. Client-side encryption is future work.
 - **Anyone with the keys can read and delete every device's files.**
 
-## S3-compatible storage
+## Storage providers
 
-hop also works with MinIO and other S3-compatible servers. Pass the server's URL when you create the workspace:
+| Provider | `--provider` | What `hop init` asks |
+| --- | --- | --- |
+| **Bizfly Cloud** (default) | `bizfly` | Bucket URL (`https://<bucket>.hcm.ss.bfcplatform.vn`) or bucket name, then the keys |
+| Amazon S3 | `aws` | Bucket, region, then the keys |
+| Other S3-compatible (MinIO, …) | `s3` | Endpoint URL, bucket, then the keys |
 
-```bash
-hop init --bucket my-hop --endpoint http://minio.local:9000 --region us-east-1
-```
+`hop whoami` shows which provider a device uses. Machines added with `hop join` take the provider from the join code, so nothing needs to be chosen there.
 
-The server must support conditional writes (`If-None-Match: *`). hop relies on them so two devices can never register the same name.
+The provider must support conditional writes (`If-None-Match: *`). hop relies on them so two devices can never register the same name. Bizfly Cloud, Amazon S3 and current MinIO all support them.
+
+Some providers, including Bizfly Cloud, don't implement plain server-side copy (`CopyObject`). On those, hop switches to multipart copy (`UploadPartCopy`). Either way the copy stays inside the provider: `cp @a:x @b:y`, `mv`, `keep` and `rename` never download the data.
 
 ## Development
 

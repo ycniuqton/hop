@@ -30,6 +30,7 @@ type machine struct {
 	vars    map[string]string
 	spawner RefreshSpawner
 	now     func() time.Time
+	tty     bool
 }
 
 type result struct {
@@ -71,6 +72,7 @@ func (m *machine) runCtx(ctx context.Context, stdin string, args ...string) resu
 		Version:  "test",
 		Now:      m.now,
 	}
+	env.Console.InTTY = m.tty
 	code := NewApp(env).Run(ctx, args)
 	return result{out: out.String(), err: errb.String(), code: code}
 }

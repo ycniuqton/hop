@@ -40,6 +40,7 @@ var (
 	ErrPreconditionFailed = errors.New("precondition failed")
 	ErrAccessDenied       = errors.New("access denied")
 	ErrNetwork            = errors.New("network error")
+	ErrNotSupported       = errors.New("not supported by the storage provider")
 )
 
 // Limits are the storage tuning values from spec section 8.

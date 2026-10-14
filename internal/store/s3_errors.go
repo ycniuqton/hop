@@ -36,10 +36,11 @@ type failure struct {
 	hint     string
 }
 
-var failures = struct{ notFound, conflict, denied failure }{
-	notFound: failure{ErrNotFound, apperr.ExitNotFound, "not found: %[1]s", ""},
-	conflict: failure{ErrPreconditionFailed, apperr.ExitConflict, "already exists: %[1]s", ""},
-	denied:   failure{ErrAccessDenied, apperr.ExitAuth, "S3 access denied on %[2]s %[1]s", "check the IAM policy ('hop init --print-policy')"},
+var failures = struct{ notFound, conflict, denied, unsupported failure }{
+	notFound:    failure{ErrNotFound, apperr.ExitNotFound, "not found: %[1]s", ""},
+	conflict:    failure{ErrPreconditionFailed, apperr.ExitConflict, "already exists: %[1]s", ""},
+	denied:      failure{ErrAccessDenied, apperr.ExitAuth, "S3 access denied on %[2]s %[1]s", "check the IAM policy ('hop init --print-policy')"},
+	unsupported: failure{ErrNotSupported, apperr.ExitGeneral, "the storage provider does not support %[2]s (%[1]s)", ""},
 }
 
 var failureByCode = map[string]failure{
@@ -47,12 +48,14 @@ var failureByCode = map[string]failure{
 	"PreconditionFailed": failures.conflict, "ConditionalRequestConflict": failures.conflict,
 	"AccessDenied": failures.denied, "Forbidden": failures.denied, "InvalidAccessKeyId": failures.denied,
 	"SignatureDoesNotMatch": failures.denied, "AllAccessDisabled": failures.denied,
+	"NotImplemented": failures.unsupported,
 }
 
 var failureByStatus = map[int]failure{
 	http.StatusNotFound:           failures.notFound,
 	http.StatusPreconditionFailed: failures.conflict,
 	http.StatusForbidden:          failures.denied,
+	http.StatusNotImplemented:     failures.unsupported,
 }
 
 // errorTranslator maps SDK errors to hop errors that carry both a sentinel and an exit code.
