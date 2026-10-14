@@ -84,4 +84,4 @@ States: `[ ]` todo · `[~]` in progress · `[x]` done. Each milestone ends with 
 - [x] Release workflow: GoReleaser on `v*` tag push (`.github/workflows/release.yml`)
 - [x] MinIO integration test with testcontainers (`test/`, build tag `integration`)
 - [x] golangci-lint clean locally (`std-error-handling` preset; SA1019 excluded for `feature/s3/manager` — DECISIONS #8)
-- [ ] Tag `v0.1.0` and confirm the release + `curl … install.sh | sh` on a real machine
+- [x] Tag `v0.1.0` and confirm the release + `curl … install.sh | sh` on a real machine _(release workflow green; one-liner installs `hop 0.1.0` on linux/amd64)_
