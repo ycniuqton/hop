@@ -30,6 +30,6 @@ func (c *MoveCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("moved %d file(s)", res.Files)
+	c.env.Console.Successf("moved %d file(s)", res.Files)
 	return nil
 }

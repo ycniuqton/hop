@@ -1,0 +1,40 @@
+# GoReleaser config: builds the three supported targets and publishes GitHub release archives.
+version: 2
+
+project_name: hop
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: hop
+    main: ./cmd/hop
+    binary: hop
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    targets:
+      - linux_amd64
+      - linux_arm64
+      - darwin_arm64
+
+archives:
+  - id: hop
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

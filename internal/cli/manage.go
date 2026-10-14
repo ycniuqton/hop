@@ -39,7 +39,7 @@ func (c *RenameCommand) Run(ctx context.Context, args []string) error {
 			return err
 		}
 	}
-	c.env.Console.Printf("Renamed %q to %q (moved %d hot files, %d store objects).", args[0], args[1], res.HotObjects, res.StoreObjects)
+	c.env.Console.Successf("Renamed %q to %q (moved %d hot files, %d store objects).", args[0], args[1], res.HotObjects, res.StoreObjects)
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (c *RemoveCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("Removed %q (%d objects purged).", args[0], res.Purged)
+	c.env.Console.Successf("Removed %q (%d objects purged).", args[0], res.Purged)
 	c.env.Console.Warnf("%s still holds working S3 keys. To really revoke access: create new keys, run 'hop invite' with them on one device, 'hop rotate <code>' on every remaining device, then delete the old keys in IAM.", args[0])
 	return nil
 }
@@ -116,7 +116,7 @@ func (c *RotateCommand) Run(ctx context.Context, args []string) error {
 	if err := c.env.ConfigStore().Save(&next); err != nil {
 		return err
 	}
-	c.env.Console.Printf("Rotated credentials for %q (new access key %s).", cfg.Device, next.AccessKeyID)
+	c.env.Console.Successf("Rotated credentials for %q (new access key %s).", cfg.Device, next.AccessKeyID)
 	return nil
 }
 

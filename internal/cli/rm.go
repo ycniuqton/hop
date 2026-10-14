@@ -32,7 +32,7 @@ func (c *RemoveStoreCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("deleted %d object(s)", n)
+	c.env.Console.Successf("deleted %d object(s)", n)
 	return nil
 }
 

@@ -48,7 +48,7 @@ func TestSetupFlow(t *testing.T) {
 	assert.Equal(t, `error: device name "web-1" is already used — pick another with --name`, c.fails(apperr.ExitConflict, "join", code, "--name", "web-1"))
 	r := c.run(code+"\n", "join", "--name", "db-1")
 	require.Equal(t, apperr.ExitOK, r.code, r.err)
-	assert.Equal(t, "Joined workspace as \"db-1\" (3 devices).\n", r.out)
+	assert.Equal(t, "ok: Joined workspace as \"db-1\" (3 devices).\n", r.out)
 
 	assert.Contains(t, a.fails(apperr.ExitConflict, "init", "--bucket", "my-hop"), "already configured")
 	fresh := h.machine("other")
@@ -132,7 +132,7 @@ func TestStoreFlow(t *testing.T) {
 func TestBridgesAndJSON(t *testing.T) {
 	a, _ := newMemoryHarness(t).pair()
 	a.ok("push", a.file("db.sql", "data"))
-	assert.Equal(t, "kept db.sql → @web-1:backups/db.sql\n", a.ok("keep", "db.sql", "@web-1:backups/"))
+	assert.Equal(t, "ok: kept db.sql → @web-1:backups/db.sql\n", a.ok("keep", "db.sql", "@web-1:backups/"))
 	a.ok("push", "@web-1:backups/db.sql", "@", "--as", "restore.sql")
 
 	var files []map[string]any
@@ -179,4 +179,19 @@ func TestConfigPermissionsEnforced(t *testing.T) {
 func TestPrintPolicy(t *testing.T) {
 	out := newMemoryHarness(t).machine("x").ok("init", "--print-policy", "--bucket", "my-hop")
 	assert.Contains(t, out, "arn:aws:s3:::my-hop/*")
+}
+
+// TestReadmeExamples runs the README bridge and JSON examples verbatim.
+func TestReadmeExamples(t *testing.T) {
+	a, b := newMemoryHarness(t).pair()
+	a.ok("push", a.file("dump.sql", "x"))
+	assert.Equal(t, "ok: kept dump.sql → @laptop:backups/dump.sql\n", a.ok("keep", "dump.sql", "@:backups/"))
+	b.ok("cp", b.file("db.sql", "y"), "@:backups/db.sql")
+	a.ok("push", "@web-1:backups/db.sql")
+	assert.Contains(t, b.ok("hot"), "db.sql")
+
+	var me map[string]any
+	require.NoError(t, json.Unmarshal([]byte(a.ok("whoami", "--json")), &me))
+	assert.Equal(t, "laptop", me["device"])
+	assert.NotContains(t, a.ok("whoami", "--json"), "test-secret-value")
 }

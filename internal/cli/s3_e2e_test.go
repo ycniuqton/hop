@@ -37,9 +37,14 @@ func (c conditionalWrites) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func newS3Harness(t *testing.T) *harness {
+	return newS3HarnessWith(t, func(h http.Handler) http.Handler { return h })
+}
+
+// newS3HarnessWith lets a test put its own middleware (fault injection) in front of the fake S3 server.
+func newS3HarnessWith(t *testing.T, wrap func(http.Handler) http.Handler) *harness {
 	backend := s3mem.New()
 	require.NoError(t, backend.CreateBucket("my-hop"))
-	srv := httptest.NewServer(conditionalWrites{next: gofakes3.New(backend).Server(), backend: backend})
+	srv := httptest.NewServer(wrap(conditionalWrites{next: gofakes3.New(backend).Server(), backend: backend}))
 	t.Cleanup(srv.Close)
 	return &harness{t: t, stores: store.NewManager(), initFlags: []string{"--endpoint", srv.URL, "--region", "us-east-1"}}
 }

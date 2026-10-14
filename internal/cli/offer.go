@@ -27,7 +27,7 @@ func (o completionOffer) Offer() {
 		c.Warnf("could not install completion: %v", err)
 		return
 	}
-	c.Printf("Installed completion to %s — open a new shell to use it", path)
+	c.Successf("Installed completion to %s — open a new shell to use it", path)
 	if hint := inst.Hint(path, o.env.Getenv); hint != "" {
 		c.Printf("%s", hint)
 	}

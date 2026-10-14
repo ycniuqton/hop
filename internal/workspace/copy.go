@@ -152,11 +152,10 @@ func (m *StoreManager) preflight(ctx context.Context, jobs []copyJob, strategies
 
 // copyPlanner expands sources into concrete jobs using cp/scp destination rules.
 type copyPlanner struct {
-	m       *StoreManager
-	opt     CopyOptions
-	dst     target.Target
-	dstDir  bool
-	dstRoot string
+	m      *StoreManager
+	opt    CopyOptions
+	dst    target.Target
+	dstDir bool
 }
 
 func (p *copyPlanner) plan(ctx context.Context, srcs []target.Target, dst target.Target) ([]copyJob, error) {

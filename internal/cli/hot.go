@@ -105,7 +105,7 @@ func (c *HotRemoveCommand) Run(ctx context.Context, args []string) error {
 	if err := inv.svc.Shelves.Remove(ctx, inv.shelf, names); err != nil {
 		return err
 	}
-	c.env.Console.Printf("deleted %d file(s) from %s", len(names), inv.shelf.Label())
+	c.env.Console.Successf("deleted %d file(s) from %s", len(names), inv.shelf.Label())
 	return nil
 }
 
@@ -137,6 +137,6 @@ func (c *HotClearCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("deleted %d file(s) from %s", n, inv.shelf.Label())
+	c.env.Console.Successf("deleted %d file(s) from %s", n, inv.shelf.Label())
 	return nil
 }

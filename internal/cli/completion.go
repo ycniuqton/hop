@@ -49,7 +49,7 @@ func (c *CompletionInstallCommand) Run(context.Context, []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("installed %s — open a new shell to use it", path)
+	c.env.Console.Successf("installed %s — open a new shell to use it", path)
 	if hint := inst.Hint(path, c.env.Getenv); hint != "" {
 		c.env.Console.Printf("%s", hint)
 	}

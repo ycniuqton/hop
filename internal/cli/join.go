@@ -59,7 +59,7 @@ func (c *JoinCommand) Run(ctx context.Context, args []string) error {
 	}
 	count := setup.DeviceCount(ctx)
 	completionOffer{env: c.env}.Offer()
-	c.env.Console.Printf("Joined workspace as %q (%d devices).", cfg.Device, count)
+	c.env.Console.Successf("Joined workspace as %q (%d devices).", cfg.Device, count)
 	return nil
 }
 

@@ -64,3 +64,15 @@ func TestTableAndQuiet(t *testing.T) {
 	c.Table([]string{"X"}, nil)
 	assert.Empty(t, out.String())
 }
+
+func TestSuccessMarker(t *testing.T) {
+	var out bytes.Buffer
+	c := NewConsole(strings.NewReader(""), &out, &out)
+	c.Color = true
+	c.Successf("pushed %s", "a")
+	c.Color = false
+	c.Successf("pushed %s", "b")
+	c.Quiet = true
+	c.Successf("pushed %s", "c")
+	assert.Equal(t, "✔ pushed a\nok: pushed b\n", out.String())
+}
