@@ -1,0 +1,28 @@
+version: "2"
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - gocyclo
+    - nestif
+    - funlen
+  settings:
+    funlen:
+      lines: 50
+      statements: -1
+    nestif:
+      min-complexity: 4
+    gocyclo:
+      min-complexity: 15
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [funlen]
+formatters:
+  enable:
+    - gofmt
+    - goimports
