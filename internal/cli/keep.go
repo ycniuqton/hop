@@ -36,6 +36,6 @@ func (c *KeepCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("kept %s → %s", inv.others[0].Path, ref)
+	c.env.Console.Successf("kept %s → %s", inv.others[0].Path, ref)
 	return nil
 }

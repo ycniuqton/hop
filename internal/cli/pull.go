@@ -51,7 +51,7 @@ func (c *PullCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Printf("pulled %s → %s", name, got)
+	c.env.Console.Successf("pulled %s → %s", name, got)
 	return nil
 }
 

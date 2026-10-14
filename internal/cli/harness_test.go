@@ -18,16 +18,18 @@ import (
 
 // harness runs the real CLI in-process for several simulated machines sharing one storage backend.
 type harness struct {
-	t      *testing.T
-	stores *store.Manager
+	t         *testing.T
+	stores    *store.Manager
 	initFlags []string
 }
 
 type machine struct {
-	h    *harness
-	name string
-	home string
-	vars map[string]string
+	h       *harness
+	name    string
+	home    string
+	vars    map[string]string
+	spawner RefreshSpawner
+	now     func() time.Time
 }
 
 type result struct {
@@ -49,23 +51,27 @@ func newMemoryHarness(t *testing.T) *harness {
 
 func (h *harness) machine(name string) *machine {
 	home := h.t.TempDir()
-	return &machine{h: h, name: name, home: home, vars: map[string]string{
+	return &machine{h: h, name: name, home: home, spawner: nopSpawner{}, now: time.Now, vars: map[string]string{
 		EnvVars.Home: home, EnvVars.AWSKey: "AKIATEST", EnvVars.AWSSecret: "test-secret-value", EnvVars.AWSRegion: "us-east-1",
 	}}
 }
 
 func (m *machine) run(stdin string, args ...string) result {
+	return m.runCtx(context.Background(), stdin, args...)
+}
+
+func (m *machine) runCtx(ctx context.Context, stdin string, args ...string) result {
 	var out, errb bytes.Buffer
 	env := &Env{
 		Console:  ui.NewConsole(strings.NewReader(stdin), &out, &errb),
 		Getenv:   func(k string) string { return m.vars[k] },
 		Hostname: func() (string, error) { return m.name + ".example.internal", nil },
 		Stores:   m.h.stores,
-		Spawner:  nopSpawner{},
+		Spawner:  m.spawner,
 		Version:  "test",
-		Now:      time.Now,
+		Now:      m.now,
 	}
-	code := NewApp(env).Run(context.Background(), args)
+	code := NewApp(env).Run(ctx, args)
 	return result{out: out.String(), err: errb.String(), code: code}
 }
 

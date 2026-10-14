@@ -54,7 +54,7 @@ func (c *InitCommand) Run(ctx context.Context, _ []string) error {
 		return err
 	}
 	completionOffer{env: c.env}.Offer()
-	c.env.Console.Printf("Created hop workspace in s3://%s/%s as %q.", c.cfg.Bucket, workspace.NewLayout(c.cfg.Prefix).String(), c.cfg.Device)
+	c.env.Console.Successf("Created hop workspace in s3://%s/%s as %q.", c.cfg.Bucket, workspace.NewLayout(c.cfg.Prefix).String(), c.cfg.Device)
 	c.env.Console.Printf("Next: run 'hop invite' to add another machine.")
 	return nil
 }

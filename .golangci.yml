@@ -19,9 +19,15 @@ linters:
     gocyclo:
       min-complexity: 15
   exclusions:
+    presets:
+      - std-error-handling
     rules:
       - path: _test\.go
         linters: [funlen]
+      # DECISIONS.md #8: keep feature/s3/manager until transfermanager reaches 1.0.
+      - path: internal/store/s3\.go
+        linters: [staticcheck]
+        text: "SA1019: .*feature/s3/manager"
 formatters:
   enable:
     - gofmt

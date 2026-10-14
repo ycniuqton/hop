@@ -31,8 +31,10 @@ type Console struct {
 	reader *bufio.Reader
 }
 
-// Style holds ANSI sequences used for TTY output.
-var Style = struct{ Dim, Reset string }{Dim: "\x1b[2m", Reset: "\x1b[0m"}
+// Style holds ANSI sequences and markers used for output.
+var Style = struct{ Dim, Reset, Success, PlainSuccess string }{
+	Dim: "\x1b[2m", Reset: "\x1b[0m", Success: "✔ ", PlainSuccess: "ok: ",
+}
 
 // NewConsole detects TTYs on the standard streams.
 func NewConsole(in io.Reader, out, errw io.Writer) *Console {
@@ -53,6 +55,15 @@ func (c *Console) Printf(format string, args ...any) {
 	if !c.Quiet && !c.JSON {
 		fmt.Fprintf(c.Out, format+"\n", args...)
 	}
+}
+
+// Successf writes a line confirming a finished action: ✔ on color terminals, "ok:" otherwise.
+func (c *Console) Successf(format string, args ...any) {
+	mark := Style.PlainSuccess
+	if c.Color {
+		mark = Style.Success
+	}
+	c.Printf(mark+format, args...)
 }
 
 // Warnf writes a warning to stderr unless JSON mode is on.

@@ -43,7 +43,7 @@ func (c *PushCommand) Run(ctx context.Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		c.env.Console.Printf("pushed %s → %s (%s)", hf.Name, hf.Shelf.Label(), ui.Size(hf.Size))
+		c.env.Console.Successf("pushed %s → %s (%s)", hf.Name, hf.Shelf.Label(), ui.Size(hf.Size))
 	}
 	return nil
 }
