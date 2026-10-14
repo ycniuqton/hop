@@ -33,6 +33,9 @@ var MinIO = struct{ Image, Port, Health, User, Password, Bucket, Region, Endpoin
 	EndpointOverride: "HOP_S3_ENDPOINT",
 }
 
+// CIMarker is set by GitHub Actions; there a missing Docker daemon is a failure, not a skip.
+const CIMarker = "CI"
+
 // Binary locates the hop executable built by `make build`; HOP_BIN overrides it.
 var Binary = struct{ EnvOverride, Default string }{EnvOverride: "HOP_BIN", Default: "../bin/hop"}
 
@@ -106,7 +109,9 @@ func newWorld(t *testing.T) world {
 }
 
 func (w world) startMinIO(ctx context.Context) string {
-	testcontainers.SkipIfProviderIsNotHealthy(w.t)
+	if os.Getenv(CIMarker) == "" {
+		testcontainers.SkipIfProviderIsNotHealthy(w.t)
+	}
 	c, err := testcontainers.Run(ctx, MinIO.Image,
 		testcontainers.WithExposedPorts(MinIO.Port),
 		testcontainers.WithEnv(map[string]string{"MINIO_ROOT_USER": MinIO.User, "MINIO_ROOT_PASSWORD": MinIO.Password}),
