@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ycniuqton/hop/internal/store"
 	"github.com/ycniuqton/hop/internal/ui"
 	"github.com/ycniuqton/hop/internal/workspace"
 )
@@ -68,16 +69,17 @@ func (c *WhoamiCommand) Run(context.Context, []string) error {
 	if err != nil {
 		return err
 	}
+	provider := store.Providers.FromEndpoint(cfg.Endpoint)
 	if c.env.Opts.JSON {
-		return c.env.Console.PrintJSON(map[string]string{"device": cfg.Device, "bucket": cfg.Bucket, "region": cfg.Region,
-			"prefix": cfg.Prefix, "endpoint": cfg.Endpoint, "workspace_id": cfg.WorkspaceID})
+		return c.env.Console.PrintJSON(map[string]string{"device": cfg.Device, "provider": string(provider.ID), "bucket": cfg.Bucket,
+			"region": cfg.Region, "prefix": cfg.Prefix, "endpoint": cfg.Endpoint, "workspace_id": cfg.WorkspaceID})
 	}
-	rows := [][]string{{"device", cfg.Device}, {"bucket", cfg.Bucket}, {"region", cfg.Region}, {"prefix", cfg.Prefix}}
+	rows := [][]string{{"device", cfg.Device}, {"provider", provider.Title}, {"bucket", cfg.Bucket}, {"region", cfg.Region}, {"prefix", cfg.Prefix}}
 	if cfg.Endpoint != "" {
 		rows = append(rows, []string{"endpoint", cfg.Endpoint})
 	}
 	for _, r := range rows {
-		c.env.Console.Printf("%-8s %s", r[0], r[1])
+		c.env.Console.Printf("%-9s %s", r[0], r[1])
 	}
 	return nil
 }

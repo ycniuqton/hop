@@ -76,3 +76,48 @@ func TestSuccessMarker(t *testing.T) {
 	c.Successf("pushed %s", "c")
 	assert.Equal(t, "✔ pushed a\nok: pushed b\n", out.String())
 }
+
+func runMenu(t *testing.T, keys string, def int) (int, string, error) {
+	t.Helper()
+	var out bytes.Buffer
+	m := &Menu{Title: "Storage provider:", Items: []string{"Bizfly Cloud", "Amazon S3", "Other S3-compatible"}, Cur: def}
+	n, err := m.Run(strings.NewReader(keys), &out)
+	return n, out.String(), err
+}
+
+func TestMenuKeys(t *testing.T) {
+	cases := []struct {
+		name, keys string
+		want       int
+	}{
+		{"enter keeps default", "\r", 0},
+		{"down down", "\x1b[B\x1b[B\r", 2},
+		{"down wraps to top", "\x1b[B\x1b[B\x1b[B\r", 0},
+		{"up wraps to bottom", "\x1b[A\r", 2},
+		{"j and k", "jjk\n", 1},
+		{"digit selects at once", "3", 2},
+		{"other escapes ignored", "\x1b[C\x1b[D\r", 0},
+	}
+	for _, c := range cases {
+		got, _, err := runMenu(t, c.keys, 0)
+		require.NoError(t, err, c.name)
+		assert.Equal(t, c.want, got, c.name)
+	}
+}
+
+func TestMenuCancelAndEOF(t *testing.T) {
+	_, _, err := runMenu(t, "\x1b[B\x03", 0)
+	assert.Equal(t, apperr.ExitInterrupted, apperr.CodeOf(err))
+	_, _, err = runMenu(t, "\x1b[B", 0)
+	assert.Equal(t, apperr.ExitUsage, apperr.CodeOf(err))
+}
+
+func TestMenuDrawsInPlaceAndCollapses(t *testing.T) {
+	_, out, err := runMenu(t, "\x1b[B\r", 0)
+	require.NoError(t, err)
+	first := "Storage provider: (↑/↓ to move, Enter to select)\r\n" +
+		"\r\x1b[2K  ❯ Bizfly Cloud\r\n\r\x1b[2K    Amazon S3\r\n\r\x1b[2K    Other S3-compatible\r\n"
+	redraw := "\x1b[3A\r\x1b[2K    Bizfly Cloud\r\n\r\x1b[2K  ❯ Amazon S3\r\n\r\x1b[2K    Other S3-compatible\r\n"
+	final := "\x1b[4A\r\x1b[2K\x1b[JStorage provider: Amazon S3\r\n"
+	assert.Equal(t, first+redraw+final, out)
+}

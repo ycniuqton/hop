@@ -131,22 +131,31 @@ func (c *Console) Ask(label, def, flag string) (string, error) {
 	return v, nil
 }
 
-// AskSecret reads a value without echo; an existing default is kept on empty input.
+// AskSecret reads a value without echo; an existing default is kept on empty input and never shown.
 func (c *Console) AskSecret(label, def, flag string) (string, error) {
-	f, ok := c.In.(*os.File)
-	if !c.CanPrompt() || !ok {
+	if !c.CanPrompt() {
 		return c.Ask(label, def, flag)
 	}
 	fmt.Fprintf(c.Err, "%s%s: ", label, map[bool]string{true: " [from environment]", false: ""}[def != ""])
-	b, err := term.ReadPassword(int(f.Fd()))
-	fmt.Fprintln(c.Err)
+	v, err := c.secretLine()
 	if err != nil {
 		return "", err
 	}
-	if v := strings.TrimSpace(string(b)); v != "" {
+	if v != "" {
 		return v, nil
 	}
 	return def, nil
+}
+
+// secretLine reads one line with echo off on a real terminal.
+func (c *Console) secretLine() (string, error) {
+	f, ok := c.In.(*os.File)
+	if !ok {
+		return c.line()
+	}
+	b, err := term.ReadPassword(int(f.Fd()))
+	fmt.Fprintln(c.Err)
+	return strings.TrimSpace(string(b)), err
 }
 
 // Confirm asks a yes/no question; without a TTY it fails and asks for -y.
@@ -168,6 +177,43 @@ func (c *Console) Confirm(question string, defaultYes bool) (bool, error) {
 	default:
 		return false, nil
 	}
+}
+
+// Choose returns the chosen index: an ↑/↓ menu on a real terminal, a numbered list on other
+// interactive input (Enter takes def, a bad answer asks again), and def without a TTY.
+func (c *Console) Choose(title string, items []string, def int) (int, error) {
+	if !c.CanPrompt() {
+		return def, nil
+	}
+	if f, ok := c.In.(*os.File); ok && c.ErrTTY {
+		return c.chooseWithArrows(f, title, items, def)
+	}
+	fmt.Fprintln(c.Err, title)
+	for i, it := range items {
+		fmt.Fprintf(c.Err, "  %d) %s\n", i+1, it)
+	}
+	for {
+		fmt.Fprintf(c.Err, "Choose [%d]: ", def+1)
+		v, err := c.line()
+		if err != nil || v == "" {
+			return def, err
+		}
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= len(items) {
+			return n - 1, nil
+		}
+		fmt.Fprintf(c.Err, "error: enter a number from 1 to %d\n", len(items))
+	}
+}
+
+// chooseWithArrows runs the ↑/↓ menu with the terminal in raw mode, restoring it afterwards.
+func (c *Console) chooseWithArrows(f *os.File, title string, items []string, def int) (int, error) {
+	state, err := term.MakeRaw(int(f.Fd()))
+	if err != nil {
+		return 0, apperr.New(apperr.ExitGeneral, "cannot read the terminal: %v", err)
+	}
+	defer func() { _ = term.Restore(int(f.Fd()), state) }()
+	m := &Menu{Title: title, Items: items, Cur: def, Color: c.Color}
+	return m.Run(f, c.Err)
 }
 
 // Pick shows a numbered list and returns the chosen index.
