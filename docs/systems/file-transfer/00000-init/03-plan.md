@@ -31,7 +31,7 @@ States: `[ ]` todo · `[~]` in progress · `[x]` done. Each milestone ends with 
 - [x] `whoami`, `devices` (relative last seen, `(you)` marker)
 - [x] `last_seen` throttled update (≤ once / 5 min)
 - [x] Workspace tests on the fake (init twice fails, name collision)
-- [~] Integration: two config dirs against MinIO init + join, duplicate name rejected _(note: passes in-process against the real S3 client over gofakes3 + conditional-write shim; the MinIO version is written in `test/integration_test.go` and runs in CI via `make e2e` — not run locally, no Docker here)_
+- [x] Integration: two config dirs against MinIO init + join, duplicate name rejected _(note: `test/integration_test.go` passes in CI against `bitnamilegacy/minio` — official image no longer on Docker Hub, DECISIONS #24; no Docker locally, verified there via `HOP_S3_ENDPOINT`)_
 
 ## M4 — Hot shelves
 - [x] `push` (shared / @dev / @, `--as`, dir rejection, meta, progress bar)
