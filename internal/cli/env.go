@@ -18,23 +18,28 @@ import (
 
 // EnvVars are the environment variables hop reads.
 var EnvVars = struct {
-	Home, ConfigHome, CacheHome, Shell, NoColor, FPath string
-	AWSKey, AWSSecret, AWSRegion, AWSDefaultRegion     string
+	Home, ConfigHome, CacheHome, Shell, NoColor, FPath, ClaudeConfig string
+	HopKey, HopSecret, ReleaseBase, Repo                             string
+	AWSKey, AWSSecret, AWSRegion, AWSDefaultRegion                   string
 }{
 	Home: "HOME", ConfigHome: "XDG_CONFIG_HOME", CacheHome: "XDG_CACHE_HOME", Shell: "SHELL", NoColor: "NO_COLOR", FPath: "FPATH",
+	ClaudeConfig: "CLAUDE_CONFIG_DIR", HopKey: "HOP_ACCESS_KEY", HopSecret: "HOP_SECRET_KEY",
+	ReleaseBase: "HOP_RELEASE_BASE", Repo: "HOP_REPO",
 	AWSKey: "AWS_ACCESS_KEY_ID", AWSSecret: "AWS_SECRET_ACCESS_KEY", AWSRegion: "AWS_REGION", AWSDefaultRegion: "AWS_DEFAULT_REGION",
 }
 
 // Env is everything a command needs from the outside world; tests replace any part of it.
+// Executable locates the running binary for update and uninstall.
 type Env struct {
-	Opts     GlobalOptions
-	Console  *ui.Console
-	Getenv   func(string) string
-	Hostname func() (string, error)
-	Stores   *store.Manager
-	Spawner  RefreshSpawner
-	Version  string
-	Now      func() time.Time
+	Opts       GlobalOptions
+	Console    *ui.Console
+	Getenv     func(string) string
+	Hostname   func() (string, error)
+	Stores     *store.Manager
+	Spawner    RefreshSpawner
+	Version    string
+	Now        func() time.Time
+	Executable func() (string, error)
 
 	root *cobra.Command
 	cfg  *config.Config
@@ -52,6 +57,8 @@ func NewEnv(version string) *Env {
 		Spawner:  processSpawner{},
 		Version:  version,
 		Now:      time.Now,
+
+		Executable: os.Executable,
 	}
 }
 

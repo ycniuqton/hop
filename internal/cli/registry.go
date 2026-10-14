@@ -4,7 +4,8 @@ package cli
 func registeredCommands() []Command {
 	return []Command{
 		&InitCommand{}, &InviteCommand{}, &JoinCommand{}, &DevicesCommand{}, &WhoamiCommand{},
-		&RenameCommand{}, &RemoveCommand{}, &RotateCommand{}, &StatusCommand{}, &CompletionCommand{},
+		&RenameCommand{}, &RemoveCommand{}, &RotateCommand{}, &StatusCommand{}, &CompletionCommand{}, &SkillCommand{},
+		&UpdateCommand{}, &UninstallCommand{},
 		&PushCommand{}, &PullCommand{}, &HotCommand{}, &KeepCommand{},
 		&CopyCommand{}, &ListCommand{}, &MoveCommand{}, &RemoveStoreCommand{},
 		&RefreshCommand{},

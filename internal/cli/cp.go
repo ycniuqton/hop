@@ -34,6 +34,6 @@ func (c *CopyCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Successf("copied %d file(s) (%s)", res.Files, ui.Size(res.Bytes))
-	return nil
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Copy, Data: map[string]any{"files": res.Files, "bytes": res.Bytes}},
+		"copied %d file(s) (%s)", res.Files, ui.Size(res.Bytes))
 }

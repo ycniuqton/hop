@@ -21,6 +21,9 @@ type GlobalOptions struct {
 	Verbose bool
 }
 
+// FlagNames are raw argument spellings the root inspects before Cobra has parsed them.
+var FlagNames = struct{ JSON, EndOfFlags string }{JSON: "--json", EndOfFlags: "--"}
+
 // Command is a class-based handler that contributes one Cobra command to the tree.
 type Command interface {
 	Build(env *Env) *cobra.Command
@@ -70,7 +73,7 @@ func (a *App) Root() *cobra.Command {
 func (a *App) bindGlobalFlags(root *cobra.Command) {
 	f := root.PersistentFlags()
 	f.BoolVarP(&a.env.Opts.Quiet, "quiet", "q", false, "print nothing except errors")
-	f.BoolVar(&a.env.Opts.JSON, "json", false, "machine-readable output for list commands")
+	f.BoolVar(&a.env.Opts.JSON, "json", false, "machine-readable output: one JSON result on stdout, JSON errors on stderr")
 	f.BoolVar(&a.env.Opts.NoColor, "no-color", false, "disable colored output")
 	f.BoolVarP(&a.env.Opts.Verbose, "verbose", "v", false, "log S3 calls")
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
@@ -83,10 +86,38 @@ func (a *App) Run(ctx context.Context, args []string) apperr.ExitCode {
 	root := a.Root()
 	root.SetArgs(args)
 	err := root.ExecuteContext(ctx)
+	code := exitCodeFor(ctx, err)
 	if err != nil && ctx.Err() == nil {
-		fmt.Fprintf(a.env.Console.Err, "error: %s\n", err)
+		a.reportError(err, code, a.wantsJSON(args))
 	}
-	return exitCodeFor(ctx, err)
+	return code
+}
+
+// wantsJSON also looks at the raw arguments, because a bad flag stops parsing before --json is read.
+func (a *App) wantsJSON(args []string) bool {
+	for _, arg := range args {
+		if arg == FlagNames.EndOfFlags {
+			break
+		}
+		if arg == FlagNames.JSON {
+			return true
+		}
+	}
+	return a.env.Opts.JSON
+}
+
+// reportError prints "error: …" on stderr, or one JSON object there when --json is on.
+func (a *App) reportError(err error, code apperr.ExitCode, asJSON bool) {
+	if !asJSON {
+		fmt.Fprintf(a.env.Console.Err, "error: %s\n", err)
+		return
+	}
+	msg, hint := err.Error(), ""
+	var ae *apperr.Error
+	if errors.As(err, &ae) {
+		msg, hint = ae.Msg, ae.Hint
+	}
+	_ = a.env.Console.PrintJSONTo(a.env.Console.Err, map[string]any{"error": msg, "hint": hint, "code": int(code), "kind": code.Kind()})
 }
 
 // exitCodeFor treats any error not produced by a handler as a Cobra usage failure.

@@ -11,7 +11,7 @@ type completionOffer struct {
 
 func (o completionOffer) Offer() {
 	c := o.env.Console
-	if !c.CanPrompt() {
+	if !c.CanPrompt() || c.JSON {
 		return
 	}
 	sh, inst, err := complete.Detect(o.env.Getenv(EnvVars.Shell))

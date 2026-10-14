@@ -75,9 +75,52 @@ func (c *Console) Warnf(format string, args ...any) {
 
 // PrintJSON writes one JSON document to stdout.
 func (c *Console) PrintJSON(v any) error {
-	enc := json.NewEncoder(c.Out)
+	return c.PrintJSONTo(c.Out, v)
+}
+
+// PrintJSONTo writes one indented JSON document to w.
+func (c *Console) PrintJSONTo(w io.Writer, v any) error {
+	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
 	return enc.Encode(v)
+}
+
+// Outcome is what an action command did: Action names it, Data holds snake_case details.
+type Outcome struct {
+	Action Action
+	Data   map[string]any
+}
+
+// Action names an action command's result in JSON output.
+type Action string
+
+// Actions are the action names reported with --json.
+var Actions = struct {
+	Init, Join, Rename, Remove, Rotate, Push, Pull, Keep, HotRemove, HotClear, Copy, Move, Delete, InstallCompletion, InstallSkill, Update, UpdateCheck, Uninstall Action
+}{
+	Init: "init", Join: "join", Rename: "rename", Remove: "remove", Rotate: "rotate", Push: "push", Pull: "pull", Keep: "keep",
+	HotRemove: "hot_rm", HotClear: "hot_clear", Copy: "cp", Move: "mv", Delete: "rm",
+	InstallCompletion: "completion_install", InstallSkill: "skill_install",
+	Update: "update", UpdateCheck: "update_check", Uninstall: "uninstall",
+}
+
+// Done reports a finished action: the "✔ …" line, or with --json one JSON object.
+func (c *Console) Done(o Outcome, format string, args ...any) error {
+	c.Successf(format, args...)
+	return c.Report(o)
+}
+
+// Report prints the outcome as one JSON object when --json is on, and nothing otherwise.
+func (c *Console) Report(o Outcome) error {
+	if !c.JSON {
+		return nil
+	}
+	doc := map[string]any{"action": o.Action}
+	for k, v := range o.Data {
+		doc[k] = v
+	}
+	return c.PrintJSON(doc)
 }
 
 // Table prints aligned columns with a dim header on color terminals.
@@ -109,6 +152,11 @@ func (c *Console) line() (string, error) {
 		return "", apperr.New(apperr.ExitUsage, "no input")
 	}
 	return strings.TrimSpace(s), nil
+}
+
+// ReadLine reads one trimmed line of input without prompting (for --secret-stdin and piped codes).
+func (c *Console) ReadLine() (string, error) {
+	return c.line()
 }
 
 // Ask prompts for a value with a default; without a TTY the missing value is a usage error.

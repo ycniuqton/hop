@@ -7,6 +7,7 @@ import (
 
 	"github.com/ycniuqton/hop/internal/apperr"
 	"github.com/ycniuqton/hop/internal/target"
+	"github.com/ycniuqton/hop/internal/ui"
 )
 
 // KeepCommand copies a hot file into the store (hot → store bridge).
@@ -36,6 +37,6 @@ func (c *KeepCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Successf("kept %s → %s", inv.others[0].Path, ref)
-	return nil
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Keep, Data: map[string]any{"name": inv.others[0].Path, "shelf": inv.shelf, "to": ref}},
+		"kept %s → %s", inv.others[0].Path, ref)
 }

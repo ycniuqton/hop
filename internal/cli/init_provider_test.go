@@ -11,11 +11,16 @@ import (
 	"github.com/ycniuqton/hop/internal/apperr"
 )
 
-// typing answers prompts the way a person at a terminal would.
+// typing answers init's prompts the way a person at a terminal would.
 func (m *machine) typing(answers ...string) result {
+	return m.typingArgs(answers, "init")
+}
+
+// typingArgs runs any command with answers typed at a terminal.
+func (m *machine) typingArgs(answers []string, args ...string) result {
 	m.tty = true
 	defer func() { m.tty = false }()
-	return m.run(strings.Join(answers, "\n")+"\n", "init")
+	return m.run(strings.Join(answers, "\n")+"\n", args...)
 }
 
 func (m *machine) whoami() map[string]string {

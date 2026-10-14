@@ -23,6 +23,8 @@ type harness struct {
 	initFlags []string
 }
 
+// machine is one simulated device; binary stands in for the hop executable, so update and
+// uninstall never touch the test binary.
 type machine struct {
 	h       *harness
 	name    string
@@ -31,7 +33,11 @@ type machine struct {
 	spawner RefreshSpawner
 	now     func() time.Time
 	tty     bool
+	version string
+	binary  string
 }
+
+func (m *machine) executable() (string, error) { return m.binary, nil }
 
 type result struct {
 	out, err string
@@ -52,9 +58,10 @@ func newMemoryHarness(t *testing.T) *harness {
 
 func (h *harness) machine(name string) *machine {
 	home := h.t.TempDir()
-	return &machine{h: h, name: name, home: home, spawner: nopSpawner{}, now: time.Now, vars: map[string]string{
-		EnvVars.Home: home, EnvVars.AWSKey: "AKIATEST", EnvVars.AWSSecret: "test-secret-value", EnvVars.AWSRegion: "us-east-1",
-	}}
+	return &machine{h: h, name: name, home: home, spawner: nopSpawner{}, now: time.Now, version: "test",
+		binary: filepath.Join(home, ".local", "bin", "hop"), vars: map[string]string{
+			EnvVars.Home: home, EnvVars.AWSKey: "AKIATEST", EnvVars.AWSSecret: "test-secret-value", EnvVars.AWSRegion: "us-east-1",
+		}}
 }
 
 func (m *machine) run(stdin string, args ...string) result {
@@ -69,8 +76,10 @@ func (m *machine) runCtx(ctx context.Context, stdin string, args ...string) resu
 		Hostname: func() (string, error) { return m.name + ".example.internal", nil },
 		Stores:   m.h.stores,
 		Spawner:  m.spawner,
-		Version:  "test",
+		Version:  m.version,
 		Now:      m.now,
+
+		Executable: m.executable,
 	}
 	env.Console.InTTY = m.tty
 	code := NewApp(env).Run(ctx, args)

@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+
+	"github.com/ycniuqton/hop/internal/ui"
 )
 
 // MoveCommand moves store files or folders.
@@ -30,6 +32,5 @@ func (c *MoveCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Successf("moved %d file(s)", res.Files)
-	return nil
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Move, Data: map[string]any{"files": res.Files}}, "moved %d file(s)", res.Files)
 }

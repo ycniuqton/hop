@@ -29,4 +29,4 @@ States: `[ ]` todo · `[~]` in progress · `[x]` done. Carried over: all `00000-
 - [x] DECISIONS.md entries
 - [x] Live check against Bizfly `hop-cli` bucket (trial prefix, cleaned up)
 - [x] vet, lint, tests green
-- [~] Release v0.2.0 (needs explicit go-ahead to commit, push and tag)
+- [x] Release v0.2.0 (needs explicit go-ahead to commit, push and tag) _(released; curl install verified)_

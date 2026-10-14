@@ -27,6 +27,16 @@ The installer reads a few environment variables:
 | `HOP_VERSION` | Install a specific tag, for example `HOP_VERSION=v0.1.0`. |
 | `HOP_INSTALL_DIR` | Install into a different folder. |
 
+Keep it current, or remove it:
+
+```bash
+hop update            # replace this binary with the latest release (checksum-verified)
+hop update --check    # only say whether a newer release exists
+hop uninstall         # remove the binary, completions, skill, cache and config (asks first)
+```
+
+`hop uninstall` never touches the bucket. To drop the device from the workspace, run `hop remove <name>` on another machine. Use `--keep-config` to keep the credentials.
+
 You can also build from source with Go 1.26 or later:
 
 ```bash
@@ -158,7 +168,7 @@ hop status
 
 | Flag | Effect |
 | --- | --- |
-| `--json` | List commands (`devices`, `hot`, `ls`, `status`, `whoami`) print a single JSON document on stdout. |
+| `--json` | Prints one JSON document on stdout: the list for list commands, a result object for action commands. Errors go to stderr as JSON. |
 | `-q` | Prints nothing except errors. |
 | `-v` | Logs every S3 call to stderr. The secret key is never printed. |
 | `--no-color` | Plain output. Setting `NO_COLOR` does the same. |
@@ -179,6 +189,37 @@ Exit codes:
 | 5 | S3 auth or permission error |
 | 6 | Network error or timeout |
 | 130 | Interrupted (Ctrl-C) |
+
+## Using hop with AI agents
+
+hop is built so coding agents (Claude Code, Codex, Cursor, …) can use it without help:
+
+- **It never prompts without a terminal.** A missing value is an error that names the flag or environment variable to set.
+- **`--json` everywhere.** List commands print their data, and action commands (`push`, `pull`, `cp`, `init`, …) print one object describing what they did. Failures print one object on stderr:
+
+  ```json
+  {"error": "unknown device \"web1\"", "hint": "did you mean web-1?", "code": 3, "kind": "not_found"}
+  ```
+
+- **One-line setup with no secret in the command:**
+
+  ```bash
+  HOP_ACCESS_KEY=… HOP_SECRET_KEY=… hop init --url https://hop-cli.hcm.ss.bfcplatform.vn --name web-1 --json
+  hop init --url … --name web-1 --secret-stdin < secret.txt         # or read the secret from stdin
+  hop invite --code | ssh web-1 'hop join --name web-1 --json'       # add a machine; the code never hits the screen
+  ```
+
+  `HOP_ACCESS_KEY` and `HOP_SECRET_KEY` take precedence over `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+
+**Teach your agent hop** with the skill that ships inside the binary. It always matches your hop version:
+
+```bash
+hop skill install              # Claude Code, all projects: ~/.claude/skills/hop/SKILL.md
+hop skill install --project    # Claude Code, this repo only: ./.claude/skills/hop/SKILL.md
+hop skill print >> AGENTS.md   # Codex, Cursor and other agents that read AGENTS.md
+```
+
+The skill covers when to use hot shelves and when to use the store, the `@` rule, recipes, exit codes, and safety rules for agents. For example, it tells them never to echo keys or join codes, and to use `-y` or `-f` only when you asked.
 
 ## Security
 
