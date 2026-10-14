@@ -38,14 +38,16 @@ func (c *PushCommand) Run(ctx context.Context, args []string) error {
 	if c.as != "" && len(inv.others) > 1 {
 		return apperr.New(apperr.ExitUsage, "--as works with one file only")
 	}
+	pushed := make([]workspace.HotFile, 0, len(inv.others))
 	for _, t := range inv.others {
 		hf, err := c.pushOne(ctx, inv, t)
 		if err != nil {
 			return err
 		}
+		pushed = append(pushed, hf)
 		c.env.Console.Successf("pushed %s → %s (%s)", hf.Name, hf.Shelf.Label(), ui.Size(hf.Size))
 	}
-	return nil
+	return c.env.Console.Report(ui.Outcome{Action: ui.Actions.Push, Data: map[string]any{"shelf": inv.shelf, "files": pushed}})
 }
 
 func (c *PushCommand) pushOne(ctx context.Context, inv hotInvocation, t target.Target) (workspace.HotFile, error) {

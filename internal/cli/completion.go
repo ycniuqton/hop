@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ycniuqton/hop/internal/complete"
+	"github.com/ycniuqton/hop/internal/ui"
 )
 
 // CompletionCommand prints a completion script, or installs it with `completion install`.
@@ -49,9 +50,11 @@ func (c *CompletionInstallCommand) Run(context.Context, []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Successf("installed %s — open a new shell to use it", path)
-	if hint := inst.Hint(path, c.env.Getenv); hint != "" {
-		c.env.Console.Printf("%s", hint)
+	hint := inst.Hint(path, c.env.Getenv)
+	if err := c.env.Console.Done(ui.Outcome{Action: ui.Actions.InstallCompletion, Data: map[string]any{"path": path, "hint": hint}},
+		"installed %s — open a new shell to use it", path); err != nil || hint == "" {
+		return err
 	}
+	c.env.Console.Printf("%s", hint)
 	return nil
 }

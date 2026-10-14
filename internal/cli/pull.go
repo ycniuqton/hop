@@ -51,8 +51,9 @@ func (c *PullCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Successf("pulled %s → %s", name, got)
-	return nil
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Pull,
+		Data: map[string]any{"name": name, "shelf": inv.shelf, "path": got, "removed": c.remove}},
+		"pulled %s → %s", name, got)
 }
 
 func (c *PullCommand) pick(ctx context.Context, inv hotInvocation) (string, error) {

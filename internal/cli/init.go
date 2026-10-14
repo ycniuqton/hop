@@ -11,6 +11,7 @@ import (
 	"github.com/ycniuqton/hop/internal/config"
 	"github.com/ycniuqton/hop/internal/naming"
 	"github.com/ycniuqton/hop/internal/store"
+	"github.com/ycniuqton/hop/internal/ui"
 	"github.com/ycniuqton/hop/internal/workspace"
 )
 
@@ -21,6 +22,8 @@ type InitCommand struct {
 	printPolicy bool
 	providerID  string
 	url         string
+	secretStdin bool
+	broadKeys   bool
 	provider    store.Provider
 }
 
@@ -35,6 +38,7 @@ func (c *InitCommand) Build(env *Env) *cobra.Command {
 	f.StringVar(&c.cfg.Prefix, "prefix", "", "key prefix inside the bucket (optional)")
 	f.StringVar(&c.cfg.Device, "name", "", "name for this device (default: hostname)")
 	f.StringVar(&c.cfg.Endpoint, "endpoint", "", "S3-compatible endpoint URL (provider 's3', e.g. MinIO)")
+	f.BoolVar(&c.secretStdin, "secret-stdin", false, "read the secret key from the first line of stdin (else $HOP_SECRET_KEY)")
 	f.BoolVar(&c.printPolicy, "print-policy", false, "print a minimal IAM policy for the bucket and exit")
 	return bindHandler(cmd, noArgs, c)
 }
@@ -61,9 +65,12 @@ func (c *InitCommand) Run(ctx context.Context, _ []string) error {
 		return err
 	}
 	completionOffer{env: c.env}.Offer()
-	c.env.Console.Successf("Created hop workspace on %s in %s/%s as %q.", c.provider.Title, c.cfg.Bucket, workspace.NewLayout(c.cfg.Prefix).String(), c.cfg.Device)
+	err = c.env.Console.Done(ui.Outcome{Action: ui.Actions.Init, Data: map[string]any{"device": c.cfg.Device, "provider": c.provider.ID,
+		"bucket": c.cfg.Bucket, "prefix": c.cfg.Prefix, "endpoint": c.cfg.Endpoint, "region": c.cfg.Region,
+		"workspace_id": c.cfg.WorkspaceID, "keys_too_broad": c.broadKeys}},
+		"Created hop workspace on %s in %s/%s as %q.", c.provider.Title, c.cfg.Bucket, workspace.NewLayout(c.cfg.Prefix).String(), c.cfg.Device)
 	c.env.Console.Printf("Next: run 'hop invite' to add another machine.")
-	return nil
+	return err
 }
 
 func (c *InitCommand) policy() error {
@@ -79,7 +86,8 @@ func (c *InitCommand) create(ctx context.Context, setup *workspace.SetupManager)
 	if err := setup.Verify(ctx); err != nil {
 		return err
 	}
-	if setup.KeysTooBroad(ctx) {
+	c.broadKeys = setup.KeysTooBroad(ctx)
+	if c.broadKeys {
 		c.env.Console.Warnf("these keys can list every bucket in the account — consider a dedicated IAM user ('hop init --print-policy')")
 	}
 	info, err := setup.Create(ctx, c.cfg.Device)
@@ -175,7 +183,11 @@ func (c *InitCommand) collectRegion() error {
 	return err
 }
 
+// collectKeys takes keys from --secret-stdin, then HOP_*, then AWS_* variables, then prompts.
 func (c *InitCommand) collectKeys() error {
+	if err := c.secretFromStdin(); err != nil {
+		return err
+	}
 	con, get, keys := c.env.Console, c.env.Getenv, c.provider.Keys
 	steps := []struct {
 		dst          *string
@@ -183,8 +195,9 @@ func (c *InitCommand) collectKeys() error {
 		flag         string
 		secret, skip bool
 	}{
-		{&c.cfg.AccessKeyID, keys.Access, get(EnvVars.AWSKey), EnvVars.AWSKey, false, false},
-		{&c.cfg.SecretAccessKey, keys.Secret, get(EnvVars.AWSSecret), EnvVars.AWSSecret, true, false},
+		{&c.cfg.AccessKeyID, keys.Access, c.firstOf(get(EnvVars.HopKey), get(EnvVars.AWSKey)), EnvVars.HopKey + " (env)", false, false},
+		{&c.cfg.SecretAccessKey, keys.Secret, c.firstOf(get(EnvVars.HopSecret), get(EnvVars.AWSSecret)),
+			EnvVars.HopSecret + " (env) or --secret-stdin", true, false},
 		{&c.cfg.Prefix, "Key prefix (optional)", "", "--prefix", false, !con.CanPrompt()},
 	}
 	for _, s := range steps {
@@ -197,6 +210,19 @@ func (c *InitCommand) collectKeys() error {
 		}
 		*s.dst = v
 	}
+	return nil
+}
+
+func (c *InitCommand) secretFromStdin() error {
+	if !c.secretStdin {
+		return nil
+	}
+	secret, err := c.env.Console.ReadLine()
+	if err != nil || secret == "" {
+		return apperr.New(apperr.ExitUsage, "--secret-stdin: no secret key on stdin").
+			WithHint("pipe it in, e.g. hop init --secret-stdin < secret.txt")
+	}
+	c.cfg.SecretAccessKey = secret
 	return nil
 }
 

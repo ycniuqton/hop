@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/ycniuqton/hop/internal/ui"
 )
 
 // RemoveStoreCommand deletes store files or folders.
@@ -32,8 +34,7 @@ func (c *RemoveStoreCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.env.Console.Successf("deleted %d object(s)", n)
-	return nil
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Delete, Data: map[string]any{"deleted": n}}, "deleted %d object(s)", n)
 }
 
 func (c *RemoveStoreCommand) confirm(n int) (bool, error) {

@@ -21,6 +21,19 @@ const (
 	ExitInterrupted ExitCode = 130
 )
 
+var kinds = map[ExitCode]string{
+	ExitOK: "ok", ExitGeneral: "general", ExitUsage: "usage", ExitNotFound: "not_found", ExitConflict: "conflict",
+	ExitAuth: "auth", ExitNetwork: "network", ExitInterrupted: "interrupted",
+}
+
+// Kind is the stable machine-readable name of an exit code, used in JSON errors.
+func (c ExitCode) Kind() string {
+	if k, ok := kinds[c]; ok {
+		return k
+	}
+	return kinds[ExitGeneral]
+}
+
 // Error is a user-facing failure carrying its exit code and an optional fix hint.
 type Error struct {
 	Code ExitCode

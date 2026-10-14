@@ -12,6 +12,8 @@ import (
 	"github.com/ycniuqton/hop/internal/apperr"
 	"github.com/ycniuqton/hop/internal/config"
 	"github.com/ycniuqton/hop/internal/joincode"
+	"github.com/ycniuqton/hop/internal/store"
+	"github.com/ycniuqton/hop/internal/ui"
 	"github.com/ycniuqton/hop/internal/workspace"
 )
 
@@ -59,8 +61,9 @@ func (c *JoinCommand) Run(ctx context.Context, args []string) error {
 	}
 	count := setup.DeviceCount(ctx)
 	completionOffer{env: c.env}.Offer()
-	c.env.Console.Successf("Joined workspace as %q (%d devices).", cfg.Device, count)
-	return nil
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Join, Data: map[string]any{"device": cfg.Device, "devices": count,
+		"provider": store.Providers.FromEndpoint(cfg.Endpoint).ID, "bucket": cfg.Bucket, "prefix": cfg.Prefix, "workspace_id": cfg.WorkspaceID}},
+		"Joined workspace as %q (%d devices).", cfg.Device, count)
 }
 
 func (c *JoinCommand) readCode(args []string) (joincode.Payload, error) {
