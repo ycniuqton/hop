@@ -13,19 +13,24 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/minio"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// MinIO describes the throwaway server; the image must support conditional writes (If-None-Match).
-var MinIO = struct{ Image, User, Password, Bucket, Region string }{
-	Image: "minio/minio:RELEASE.2025-04-22T22-12-26Z", User: "hopadmin", Password: "hopadmin-secret", Bucket: "my-hop", Region: "us-east-1",
+// MinIO describes the throwaway server. The official minio/minio image is no longer published on
+// Docker Hub, so this pins Bitnami's archived MinIO build, which supports conditional writes (If-None-Match).
+var MinIO = struct{ Image, Port, Health, User, Password, Bucket, Region, EndpointOverride string }{
+	Image: "bitnamilegacy/minio:2025.7.23", Port: "9000/tcp", Health: "/minio/health/live",
+	User: "hopadmin", Password: "hopadmin-secret", Bucket: "my-hop", Region: "us-east-1",
+	EndpointOverride: "HOP_S3_ENDPOINT",
 }
 
 // Binary locates the hop executable built by `make build`; HOP_BIN overrides it.
@@ -85,21 +90,33 @@ type world struct {
 }
 
 func newWorld(t *testing.T) world {
-	testcontainers.SkipIfProviderIsNotHealthy(t)
 	ctx := context.Background()
-	c, err := minio.Run(ctx, MinIO.Image, minio.WithUsername(MinIO.User), minio.WithPassword(MinIO.Password))
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = c.Terminate(context.Background()) })
-	conn, err := c.ConnectionString(ctx)
-	require.NoError(t, err)
-	w := world{t: t, endpoint: "http://" + conn, bin: Binary.Default}
+	w := world{t: t, endpoint: os.Getenv(MinIO.EndpointOverride), bin: Binary.Default}
+	if w.endpoint == "" {
+		w.endpoint = w.startMinIO(ctx)
+	}
 	if p := os.Getenv(Binary.EnvOverride); p != "" {
 		w.bin = p
 	}
-	w.bin, err = filepath.Abs(w.bin)
+	bin, err := filepath.Abs(w.bin)
 	require.NoError(t, err)
+	w.bin = bin
 	w.createBucket(ctx)
 	return w
+}
+
+func (w world) startMinIO(ctx context.Context) string {
+	testcontainers.SkipIfProviderIsNotHealthy(w.t)
+	c, err := testcontainers.Run(ctx, MinIO.Image,
+		testcontainers.WithExposedPorts(MinIO.Port),
+		testcontainers.WithEnv(map[string]string{"MINIO_ROOT_USER": MinIO.User, "MINIO_ROOT_PASSWORD": MinIO.Password}),
+		testcontainers.WithWaitStrategy(wait.ForHTTP(MinIO.Health).WithPort(nat.Port(MinIO.Port)).WithStartupTimeout(2*time.Minute)),
+	)
+	testcontainers.CleanupContainer(w.t, c)
+	require.NoError(w.t, err)
+	endpoint, err := c.PortEndpoint(ctx, nat.Port(MinIO.Port), "http")
+	require.NoError(w.t, err)
+	return endpoint
 }
 
 func (w world) createBucket(ctx context.Context) {
