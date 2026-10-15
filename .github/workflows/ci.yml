@@ -24,7 +24,23 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go vet ./...
-      - run: go test ./...
+      - name: go test (failures become annotations)
+        shell: pwsh
+        run: |
+          go test -json ./... | Set-Content test.json
+          $failed = $LASTEXITCODE
+          $events = Get-Content test.json | Where-Object { $_.StartsWith('{') } | ForEach-Object { $_ | ConvertFrom-Json }
+          $out = @{}
+          foreach ($e in $events) {
+            $key = "$($e.Package) $($e.Test)"
+            if ($e.Action -eq 'output') { $out[$key] += $e.Output }
+            if ($e.Action -eq 'fail') {
+              $msg = ($out[$key] -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A')
+              if ($msg.Length -gt 3500) { $msg = $msg.Substring($msg.Length - 3500) }
+              Write-Output "::error title=FAIL $key::$msg"
+            }
+          }
+          exit $failed
       - name: install.ps1, update and uninstall on real Windows
         shell: pwsh
         run: |
