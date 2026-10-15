@@ -56,8 +56,13 @@ func newMemoryHarness(t *testing.T) *harness {
 	return &harness{t: t, stores: m}
 }
 
+// machine creates a device with its own home; the path is resolved so Windows short names
+// (C:\Users\RUNNER~1) match what hop reports after resolving its executable.
 func (h *harness) machine(name string) *machine {
 	home := h.t.TempDir()
+	if real, err := filepath.EvalSymlinks(home); err == nil {
+		home = real
+	}
 	return &machine{h: h, name: name, home: home, spawner: nopSpawner{}, now: time.Now, version: "test",
 		binary: filepath.Join(home, ".local", "bin", "hop"), vars: map[string]string{
 			EnvVars.Home: home, EnvVars.AWSKey: "AKIATEST", EnvVars.AWSSecret: "test-secret-value", EnvVars.AWSRegion: "us-east-1",

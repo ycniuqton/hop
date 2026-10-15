@@ -11,7 +11,15 @@ import (
 )
 
 //go:embed SKILL.md
-var document string
+var embedded string
+
+// Source is skill text as checked out; a Windows checkout may have converted it to CRLF.
+type Source string
+
+// Normalized returns the text with LF line endings.
+func (s Source) Normalized() string { return strings.ReplaceAll(string(s), "\r\n", "\n") }
+
+var document = Source(embedded).Normalized()
 
 // Document is the full SKILL.md, front matter included.
 func Document() string { return document }

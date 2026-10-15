@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -40,8 +41,12 @@ func TestInitInteractiveBizfly(t *testing.T) {
 	m := withoutAWSEnv(newMemoryHarness(t).machine("laptop"))
 	r := m.typing("", "https://hop-cli.hcm.ss.bfcplatform.vn", "BFCKEY", "bfc-secret", "", "")
 	require.Equal(t, apperr.ExitOK, r.code, r.err)
+	offer := ""
+	if runtime.GOOS == "windows" {
+		offer = "Enable tab completion for powershell? [Y/n] "
+	}
 	assert.Equal(t, "Storage provider:\n  1) Bizfly Cloud\n  2) Amazon S3\n  3) Other S3-compatible\nChoose [1]: "+
-		"Bucket URL or name: Access key: Secret key: Key prefix (optional): Device name [laptop]: ", r.err)
+		"Bucket URL or name: Access key: Secret key: Key prefix (optional): Device name [laptop]: "+offer, r.err)
 	assert.Contains(t, r.out, `ok: Created hop workspace on Bizfly Cloud in hop-cli/ as "laptop".`)
 	assert.Equal(t, map[string]string{"device": "laptop", "provider": "bizfly", "bucket": "hop-cli", "region": "us-east-1",
 		"prefix": "", "endpoint": "https://hcm.ss.bfcplatform.vn", "workspace_id": m.whoami()["workspace_id"]}, m.whoami())
