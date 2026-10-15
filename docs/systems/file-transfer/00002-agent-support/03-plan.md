@@ -35,4 +35,4 @@ States: `[ ]` todo · `[~]` in progress · `[x]` done. Carried over: all `00000-
 - [x] README: "Using hop with AI agents"
 - [x] DECISIONS.md entries
 - [x] vet, lint, tests, rule check green
-- [~] Release v0.3.0 (needs explicit go-ahead to commit, push and tag)
+- [x] Release v0.3.0 (needs explicit go-ahead to commit, push and tag) _(released; curl install, update, skill and uninstall verified)_

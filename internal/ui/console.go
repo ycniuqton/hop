@@ -39,7 +39,7 @@ var Style = struct{ Dim, Reset, Success, PlainSuccess string }{
 // NewConsole detects TTYs on the standard streams.
 func NewConsole(in io.Reader, out, errw io.Writer) *Console {
 	var t terminal
-	return &Console{In: in, Out: out, Err: errw, InTTY: t.is(in), ErrTTY: t.is(errw), Color: t.is(out), Now: time.Now}
+	return &Console{In: in, Out: out, Err: errw, InTTY: t.is(in), ErrTTY: t.is(errw) && t.prepare(errw), Color: t.is(out) && t.prepare(out), Now: time.Now}
 }
 
 // terminal detects whether a stream is an interactive terminal.

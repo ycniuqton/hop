@@ -1,6 +1,7 @@
 package target
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -88,4 +89,13 @@ func TestForStoreRejectsBareDevice(t *testing.T) {
 func TestDevicesDistinct(t *testing.T) {
 	l, _ := p.ParseAll([]string{"x", "@web-1:a", "@web-1", "@", "@db-1:"})
 	assert.Equal(t, []string{"web-1", "laptop", "db-1"}, l.Devices())
+}
+
+func TestLocalFolderWithPlatformSeparator(t *testing.T) {
+	tg, err := Parser{Self: "me"}.Parse("backups" + string(filepath.Separator))
+	require.NoError(t, err)
+	assert.True(t, tg.Dir)
+	tg, err = Parser{Self: "me"}.Parse("backups/")
+	require.NoError(t, err)
+	assert.True(t, tg.Dir)
 }

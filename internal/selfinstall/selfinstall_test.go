@@ -1,6 +1,8 @@
 package selfinstall_test
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -52,6 +54,9 @@ func TestLatestAndFetch(t *testing.T) {
 }
 
 func TestReplaceFollowsSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need admin rights on Windows")
+	}
 	dir := t.TempDir()
 	real := filepath.Join(dir, "hop-real")
 	require.NoError(t, os.WriteFile(real, []byte("old"), 0o755))
@@ -71,8 +76,8 @@ func TestReplaceFollowsSymlink(t *testing.T) {
 }
 
 func TestReplaceWithoutWriteAccess(t *testing.T) {
-	if os.Geteuid() == 0 {
-		t.Skip("root can write anywhere")
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs Unix directory permissions and a non-root user")
 	}
 	dir := t.TempDir()
 	p := filepath.Join(dir, "hop")
@@ -103,4 +108,43 @@ func TestFootprintRemove(t *testing.T) {
 		_, err := os.Stat(p)
 		assert.True(t, os.IsNotExist(err), p)
 	}
+}
+
+func TestPackagingPerOS(t *testing.T) {
+	rel := selfinstall.NewReleases("", "")
+	assert.Equal(t, "hop_windows_arm64.zip", rel.Asset("windows", "arm64"))
+	assert.Equal(t, "hop_linux_amd64.tar.gz", rel.Asset("linux", "amd64"))
+	assert.Equal(t, "hop.exe", selfinstall.PackagingFor("windows").Executable)
+	assert.Equal(t, "hop", selfinstall.PackagingFor("darwin").Executable)
+}
+
+func TestZipExtract(t *testing.T) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for name, body := range map[string]string{"README.md": "r", "hop.exe": "windows-binary"} {
+		w, _ := zw.Create(name)
+		_, _ = w.Write([]byte(body))
+	}
+	require.NoError(t, zw.Close())
+	got, err := selfinstall.PackagingFor("windows").Format.Extract(buf.Bytes(), "hop.exe")
+	require.NoError(t, err)
+	assert.Equal(t, "windows-binary", string(got))
+	_, err = selfinstall.PackagingFor("windows").Format.Extract(buf.Bytes(), "missing.exe")
+	assert.ErrorContains(t, err, `no "missing.exe"`)
+	_, err = selfinstall.PackagingFor("windows").Format.Extract([]byte("not a zip"), "hop.exe")
+	assert.ErrorContains(t, err, "not a zip")
+}
+
+func TestReplaceSwapsAndCleansStale(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "hop")
+	require.NoError(t, os.WriteFile(p, []byte("old"), 0o755))
+	bin := selfinstall.Binary{Path: p}
+	require.NoError(t, bin.Replace([]byte("new")))
+	got, _ := os.ReadFile(p)
+	assert.Equal(t, "new", string(got))
+	require.NoError(t, os.WriteFile(p+selfinstall.StaleSuffix, []byte("left over"), 0o644))
+	bin.CleanStale()
+	assert.NoFileExists(t, p+selfinstall.StaleSuffix)
+	bin.CleanStale()
 }

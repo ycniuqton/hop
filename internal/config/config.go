@@ -51,7 +51,7 @@ var File = FileSpec{
 	FileName:    "config.json",
 	FileMode:    0o600,
 	DirMode:     0o700,
-	ForbidMask:  0o077,
+	ForbidMask:  platformForbidMask,
 }
 
 // Store reads and writes one config file.

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,9 @@ func TestUpdateReplacesBinary(t *testing.T) {
 	assert.Contains(t, out, "hop skill install")
 	assert.Equal(t, "new-binary", m.binaryBody())
 	info, _ := os.Stat(m.binary)
-	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+	}
 }
 
 func TestUpdateWhenCurrentOrNewer(t *testing.T) {

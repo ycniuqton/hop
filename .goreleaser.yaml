@@ -1,4 +1,4 @@
-# GoReleaser config: builds the three supported targets and publishes GitHub release archives.
+# GoReleaser config: builds the supported targets and publishes GitHub release archives.
 version: 2
 
 project_name: hop
@@ -21,10 +21,15 @@ builds:
       - linux_amd64
       - linux_arm64
       - darwin_arm64
+      - windows_amd64
+      - windows_arm64
 
 archives:
   - id: hop
     formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md

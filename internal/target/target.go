@@ -3,6 +3,7 @@ package target
 
 import (
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/ycniuqton/hop/internal/apperr"
@@ -45,7 +46,8 @@ type Parser struct {
 func (p Parser) Parse(arg string) (Target, error) {
 	rest, isDevice := strings.CutPrefix(arg, Syntax.DeviceMark)
 	if !isDevice {
-		return Target{Kind: Local, Raw: arg, Path: arg, Dir: strings.HasSuffix(arg, Syntax.DirSuffix)}, nil
+		dir := strings.HasSuffix(arg, Syntax.DirSuffix) || strings.HasSuffix(arg, string(filepath.Separator))
+		return Target{Kind: Local, Raw: arg, Path: arg, Dir: dir}, nil
 	}
 	name, rawPath, hasPath := strings.Cut(rest, Syntax.PathSep)
 	device, err := p.resolveDevice(name)

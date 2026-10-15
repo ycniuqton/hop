@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -58,7 +59,9 @@ func TestSetupFlow(t *testing.T) {
 
 	info, err := os.Stat(a.path(".config/hop/config.json"))
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	}
 }
 
 func TestInviteOutput(t *testing.T) {
@@ -171,6 +174,9 @@ func TestRenameRemoveRotate(t *testing.T) {
 }
 
 func TestConfigPermissionsEnforced(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows file modes do not describe ACLs; the check is Unix-only")
+	}
 	a, _ := newMemoryHarness(t).pair()
 	require.NoError(t, os.Chmod(a.path(".config/hop/config.json"), 0o644))
 	assert.Contains(t, a.fails(apperr.ExitAuth, "whoami"), "chmod 600")

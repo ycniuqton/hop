@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,9 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 
 	info, err := os.Stat(s.Path)
 	require.NoError(t, err)
-	assert.Equal(t, File.FileMode, info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, File.FileMode, info.Mode().Perm())
+	}
 
 	got, err := s.Load()
 	require.NoError(t, err)
@@ -30,6 +33,9 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 }
 
 func TestLoadRefusesReadableByOthers(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the mode check is Unix-only")
+	}
 	s := &Store{Path: filepath.Join(t.TempDir(), "config.json")}
 	require.NoError(t, s.Save(sample()))
 	require.NoError(t, os.Chmod(s.Path, 0o644))

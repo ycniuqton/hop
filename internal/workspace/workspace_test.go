@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -104,7 +105,9 @@ func TestPushPullSharedAndDeviceShelves(t *testing.T) {
 	data, _ := os.ReadFile(got)
 	assert.Equal(t, "v2", string(data))
 	info, _ := os.Stat(got)
-	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm(), "mode restored")
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o640), info.Mode().Perm(), "mode restored")
+	}
 
 	_, err = web.svc.Shelves.Pull(ctx, SharedShelf, "dump.sql", out, false, false)
 	assert.ErrorContains(t, err, "exists:")

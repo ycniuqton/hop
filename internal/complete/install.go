@@ -17,10 +17,14 @@ import (
 type Shell string
 
 const (
-	Bash Shell = "bash"
-	Zsh  Shell = "zsh"
-	Fish Shell = "fish"
+	Bash       Shell = "bash"
+	Zsh        Shell = "zsh"
+	Fish       Shell = "fish"
+	PowerShell Shell = "powershell"
 )
+
+// aliases maps other executable names to a supported shell.
+var aliases = map[string]Shell{"pwsh": PowerShell, "pwsh.exe": PowerShell, "powershell.exe": PowerShell}
 
 // Installer knows where one shell loads completions from and how to generate the script.
 type Installer interface {
@@ -67,15 +71,30 @@ func (fishInstaller) Script(root *cobra.Command, w io.Writer) error {
 }
 func (fishInstaller) Hint(string, func(string) string) string { return "" }
 
+type powershellInstaller struct{}
+
+func (powershellInstaller) Path(home string) string {
+	return filepath.Join(home, "AppData", "Local", "hop", "completion.ps1")
+}
+func (powershellInstaller) Script(root *cobra.Command, w io.Writer) error {
+	return root.GenPowerShellCompletionWithDesc(w)
+}
+func (powershellInstaller) Hint(path string, _ func(string) string) string {
+	return "add this line to your PowerShell profile (notepad $PROFILE), then open a new terminal: . \"" + path + "\""
+}
+
 // Installers is the shell registry; adding a shell means adding an entry here.
-var Installers = map[Shell]Installer{Bash: bashInstaller{}, Zsh: zshInstaller{}, Fish: fishInstaller{}}
+var Installers = map[Shell]Installer{Bash: bashInstaller{}, Zsh: zshInstaller{}, Fish: fishInstaller{}, PowerShell: powershellInstaller{}}
 
 // Shells lists supported shells in a stable order.
-func Shells() []string { return []string{string(Bash), string(Zsh), string(Fish)} }
+func Shells() []string { return []string{string(Bash), string(Zsh), string(Fish), string(PowerShell)} }
 
 // Lookup returns the installer for a shell name.
 func Lookup(name string) (Shell, Installer, error) {
 	sh := Shell(name)
+	if a, ok := aliases[name]; ok {
+		sh = a
+	}
 	inst, ok := Installers[sh]
 	if !ok {
 		return "", nil, apperr.New(apperr.ExitUsage, "unsupported shell %q", name).
@@ -84,8 +103,11 @@ func Lookup(name string) (Shell, Installer, error) {
 	return sh, inst, nil
 }
 
-// Detect picks the shell from $SHELL.
+// Detect picks the shell from $SHELL, or the platform's default shell when it is unset (Windows).
 func Detect(shellPath string) (Shell, Installer, error) {
+	if shellPath == "" && defaultShell != "" {
+		return Lookup(string(defaultShell))
+	}
 	if shellPath == "" {
 		return "", nil, apperr.New(apperr.ExitUsage, "cannot detect your shell ($SHELL is empty)").
 			WithHint("run 'hop completion <%s>' and install the script yourself", strings.Join(Shells(), "|"))

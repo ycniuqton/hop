@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ycniuqton/hop/internal/apperr"
+	"github.com/ycniuqton/hop/internal/selfinstall"
 )
 
 // GlobalOptions holds the flags shared by every command.
@@ -133,8 +134,11 @@ func exitCodeFor(ctx context.Context, err error) apperr.ExitCode {
 	}
 }
 
-// Execute is the binary entry point.
+// Execute is the binary entry point; it first deletes any binary a Windows update moved aside.
 func Execute(version string) apperr.ExitCode {
+	if bin, err := selfinstall.Locate(os.Executable); err == nil {
+		bin.CleanStale()
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	return NewApp(NewEnv(version)).Run(ctx, os.Args[1:])
