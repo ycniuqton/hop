@@ -3,10 +3,8 @@
 package selfinstall
 
 import (
-	"archive/tar"
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -23,11 +21,11 @@ import (
 
 // Defaults describe the official release channel and its asset names (they match .goreleaser.yaml).
 var Defaults = struct {
-	Base, Repo, Binary, Checksums, ArchiveExt, TagPath, LatestPath, DownloadPath string
-	Timeout                                                                      time.Duration
-	MaxDownload                                                                  int64
+	Base, Repo, Binary, Checksums, TagPath, LatestPath, DownloadPath string
+	Timeout                                                          time.Duration
+	MaxDownload                                                      int64
 }{
-	Base: "https://github.com", Repo: "ycniuqton/hop", Binary: "hop", Checksums: "checksums.txt", ArchiveExt: ".tar.gz",
+	Base: "https://github.com", Repo: "ycniuqton/hop", Binary: "hop", Checksums: "checksums.txt",
 	TagPath: "/releases/tag/", LatestPath: "/releases/latest", DownloadPath: "/releases/download/",
 	Timeout: 2 * time.Minute, MaxDownload: 200 << 20,
 }
@@ -70,9 +68,9 @@ func (r Releases) Latest(ctx context.Context) (string, error) {
 	return path.Base(loc), nil
 }
 
-// Asset is the archive name for one platform, e.g. hop_linux_amd64.tar.gz.
+// Asset is the archive name for one platform, e.g. hop_linux_amd64.tar.gz or hop_windows_amd64.zip.
 func (r Releases) Asset(goos, goarch string) string {
-	return Defaults.Binary + "_" + goos + "_" + goarch + Defaults.ArchiveExt
+	return Defaults.Binary + "_" + goos + "_" + goarch + PackagingFor(goos).Format.Ext()
 }
 
 // Fetch downloads the platform archive for tag, checks it against checksums.txt and returns the binary.
@@ -89,7 +87,8 @@ func (r Releases) Fetch(ctx context.Context, tag, goos, goarch string) ([]byte, 
 	if err := r.verify(sums, asset, archive); err != nil {
 		return nil, err
 	}
-	return r.extract(archive)
+	pk := PackagingFor(goos)
+	return pk.Format.Extract(archive, pk.Executable)
 }
 
 func (r Releases) download(ctx context.Context, tag, name string) ([]byte, error) {
@@ -128,26 +127,6 @@ func (r Releases) verify(sums []byte, asset string, archive []byte) error {
 		}
 	}
 	return apperr.New(apperr.ExitGeneral, "checksum mismatch for %s — refusing to install it", asset)
-}
-
-func (r Releases) extract(archive []byte) ([]byte, error) {
-	gz, err := gzip.NewReader(bytes.NewReader(archive))
-	if err != nil {
-		return nil, apperr.New(apperr.ExitGeneral, "release archive is not gzip: %v", err)
-	}
-	tr := tar.NewReader(gz)
-	for {
-		h, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			return nil, apperr.New(apperr.ExitGeneral, "release archive has no %q binary", Defaults.Binary)
-		}
-		if err != nil {
-			return nil, apperr.New(apperr.ExitGeneral, "release archive is corrupt: %v", err)
-		}
-		if h.Typeflag == tar.TypeReg && path.Base(h.Name) == Defaults.Binary {
-			return io.ReadAll(io.LimitReader(tr, Defaults.MaxDownload))
-		}
-	}
 }
 
 func (r Releases) networkError(err error) error {

@@ -43,3 +43,21 @@ Choices made where the spec is silent or where it had to be adapted. Newest last
 39. **`hop update` does not rewrite the skill itself.** The running process still embeds the old skill, so it prints a reminder to run `hop skill install` with the new binary.
 40. **`hop uninstall` removes the whole local footprint by default, config included.** Leaving keys behind on an uninstalled machine is the riskier default. It lists everything first, needs confirmation (or `-y`), and `--keep-config` opts out. It cannot drop the device from the workspace, because `remove` refuses to remove the current device, so it names the `hop remove` command to run elsewhere. Empty `hop` folders (`~/.config/hop`, `~/.claude/skills/hop`) are removed too.
 41. **Release source overrides:** `HOP_RELEASE_BASE` (default `https://github.com`) and `HOP_REPO` (default `ycniuqton/hop`), matching `install.sh`, for mirrors and tests. `Env.Executable` lets tests aim update and uninstall at a temp file instead of the test binary.
+42. **Windows (00003).** Platform differences sit behind `_windows.go` / `_unix.go` build tags in six places:
+    - the detached refresh spawn;
+    - the config mode check (Unix-only, since Windows modes do not describe ACLs);
+    - binary swap and delete;
+    - console virtual-terminal mode;
+    - the default completion shell;
+    - the update permission hint.
+    Business code never checks `runtime.GOOS`; only tests do, to skip Unix-mode and symlink checks.
+43. **Self-update and uninstall of a running `hop.exe`.** Windows lets a running executable be renamed but not overwritten or deleted. `update` moves `hop.exe` to `hop.exe.old`, renames the new file in, and rolls back if that fails. Every start runs `CleanStale` to delete a leftover `.old`. `uninstall` moves the binary aside and starts a detached, hidden `cmd /c` that deletes it about two seconds after hop exits. CI checks both on `windows-latest` with a real running binary.
+44. **Release packaging is a registry** (`selfinstall.PackagingFor`): Windows uses `.zip` + `hop.exe`, everything else `.tar.gz` + `hop`, matching GoReleaser's `format_overrides`.
+45. **`install.ps1`** mirrors `install.sh`:
+    - it accepts `HOP_VERSION`, `HOP_INSTALL_DIR`, `HOP_REPO` and `HOP_DOWNLOAD_URL`, and verifies `checksums.txt`;
+    - it installs to `%LOCALAPPDATA%\Programs\hop` and adds that folder to the user PATH;
+    - errors use `throw`, never `exit`, because `exit` would close the user's window under `irm | iex`.
+    It was tested under PowerShell 7 on Linux up to the step that runs `hop.exe`; CI runs it end to end on Windows.
+46. **PowerShell completion** is installed to `%LOCALAPPDATA%\hop\completion.ps1` (`home\AppData\Local\hop`). hop prints the line to dot-source it from `$PROFILE` rather than editing the profile, because its location varies (OneDrive redirection, Windows PowerShell vs PowerShell 7). `pwsh` and `powershell.exe` are aliases of `powershell`, and with `$SHELL` unset Windows defaults to PowerShell.
+47. **The `@` notation stays.** PowerShell needs `@…` arguments quoted, which hop cannot change. The README documents it, and Cobra's PowerShell completion escapes `@`. An alternative prefix was rejected because it would make the `@` rule inconsistent across platforms.
+48. **Console colours and the ↑/↓ menu** need `ENABLE_VIRTUAL_TERMINAL_PROCESSING`. If the console refuses it, that stream is treated as non-colour and non-TTY: plain text and the numbered list. `x/term` raw mode already enables VT input, so arrow keys arrive as the same escape sequences as on Unix.

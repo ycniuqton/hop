@@ -37,16 +37,24 @@ func (b Binary) Replace(data []byte) error {
 	if err := errors.Join(werr, tmp.Close(), os.Chmod(tmp.Name(), 0o755)); err != nil {
 		return b.writeError(err)
 	}
-	if err := os.Rename(tmp.Name(), b.Path); err != nil {
+	if err := b.swap(tmp.Name()); err != nil {
 		return b.writeError(err)
 	}
 	return nil
 }
 
+// StaleSuffix marks the previous binary that Windows could not delete while it was running.
+const StaleSuffix = ".old"
+
+// CleanStale deletes the binary a previous update or uninstall moved aside; errors are ignored.
+func (b Binary) CleanStale() {
+	_ = os.Remove(b.Path + StaleSuffix)
+}
+
 func (b Binary) writeError(err error) error {
 	e := apperr.New(apperr.ExitGeneral, "cannot replace %s: %v", b.Path, err)
 	if errors.Is(err, fs.ErrPermission) {
-		return e.WithHint("re-run with sudo, or reinstall with the curl installer")
+		return e.WithHint("%s", reinstallHint)
 	}
 	return e
 }
@@ -90,11 +98,7 @@ func (f Footprint) Remove(items []Item) ([]Item, error) {
 	var removed []Item
 	var errs []error
 	for _, it := range items {
-		err := os.Remove(it.Path)
-		if it.Dir {
-			err = os.RemoveAll(it.Path)
-		}
-		if err != nil {
+		if err := f.removeItem(it); err != nil {
 			errs = append(errs, apperr.New(apperr.ExitGeneral, "cannot remove %s: %v", it.Path, err))
 			continue
 		}
@@ -102,6 +106,16 @@ func (f Footprint) Remove(items []Item) ([]Item, error) {
 		f.pruneParent(it.Path)
 	}
 	return removed, errors.Join(errs...)
+}
+
+func (f Footprint) removeItem(it Item) error {
+	switch {
+	case it.Dir:
+		return os.RemoveAll(it.Path)
+	case it.Kind == KindBinary:
+		return Binary{Path: it.Path}.Delete()
+	}
+	return os.Remove(it.Path)
 }
 
 // pruneParent removes the folder hop created around a file (e.g. ~/.config/hop) once it is empty.

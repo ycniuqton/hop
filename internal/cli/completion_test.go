@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -177,5 +178,22 @@ func TestCompletionInstall(t *testing.T) {
 	m.vars[EnvVars.Shell] = "/bin/tcsh"
 	assert.Contains(t, m.fails(apperr.ExitUsage, "completion", "install"), `unsupported shell "tcsh"`)
 	m.vars[EnvVars.Shell] = ""
-	assert.Contains(t, m.fails(apperr.ExitUsage, "completion", "install"), "hop completion <bash|zsh|fish>")
+	if runtime.GOOS == "windows" {
+		assert.Contains(t, m.ok("completion", "install"), "completion.ps1", "Windows defaults to PowerShell")
+		return
+	}
+	assert.Contains(t, m.fails(apperr.ExitUsage, "completion", "install"), "hop completion <bash|zsh|fish|powershell>")
+}
+
+func TestCompletionPowerShell(t *testing.T) {
+	m := newMemoryHarness(t).machine("x")
+	m.vars[EnvVars.Shell] = "pwsh"
+	path := filepath.Join(m.home, "AppData", "Local", "hop", "completion.ps1")
+	out := m.ok("completion", "install")
+	assert.Contains(t, out, "ok: installed "+path)
+	assert.Contains(t, out, `add this line to your PowerShell profile (notepad $PROFILE), then open a new terminal: . "`+path+`"`)
+	script, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(script), "Register-ArgumentCompleter")
+	assert.Equal(t, string(script), m.ok("completion", "powershell"))
 }

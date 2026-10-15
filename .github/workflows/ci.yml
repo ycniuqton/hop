@@ -15,3 +15,54 @@ jobs:
       - run: sudo apt-get install -y bash-completion
       - run: go test -race ./...
       - run: make e2e
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test ./...
+      - name: install.ps1, update and uninstall on real Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = Join-Path $env:RUNNER_TEMP 'releases'
+          $v1 = Join-Path $repo 'me/hop/releases/download/v0.0.1'
+          $v2 = Join-Path $repo 'me/hop/releases/download/v0.0.2'
+          foreach ($pair in @(@($v1, '0.0.1'), @($v2, '0.0.2'))) {
+            $dir, $ver = $pair
+            New-Item -ItemType Directory -Force (Join-Path $dir 'x') | Out-Null
+            go build -ldflags "-X main.version=$ver" -o (Join-Path $dir 'x/hop.exe') ./cmd/hop
+            Compress-Archive -Force -Path (Join-Path $dir 'x/hop.exe') -DestinationPath (Join-Path $dir 'hop_windows_amd64.zip')
+            $h = (Get-FileHash (Join-Path $dir 'hop_windows_amd64.zip') -Algorithm SHA256).Hash.ToLower()
+            "$h  hop_windows_amd64.zip" | Set-Content (Join-Path $dir 'checksums.txt')
+          }
+          $srv = Start-Process python -ArgumentList '-m', 'http.server', '18080', '--directory', $repo -PassThru -WindowStyle Hidden
+          Start-Sleep 3
+          $bin = Join-Path $env:RUNNER_TEMP 'hop-bin'
+          $env:HOP_INSTALL_DIR = $bin
+          $env:HOP_DOWNLOAD_URL = 'http://127.0.0.1:18080/me/hop/releases/download/v0.0.1'
+          Get-Content -Raw ./install.ps1 | Invoke-Expression
+          $hop = Join-Path $bin 'hop.exe'
+          if ((& $hop --version) -ne 'hop 0.0.1') { throw 'install.ps1 did not install 0.0.1' }
+
+          $env:HOP_RELEASE_BASE = 'http://127.0.0.1:18080'
+          $env:HOP_REPO = 'me/hop'
+          & $hop update --version v0.0.2
+          if ($LASTEXITCODE -ne 0) { throw 'hop update failed' }
+          if ((& $hop --version) -ne 'hop 0.0.2') { throw 'hop update did not replace the running hop.exe' }
+          if (Test-Path "$hop.old") { throw 'the next run should have deleted hop.exe.old' }
+
+          $env:HOME = Join-Path $env:RUNNER_TEMP 'home'
+          New-Item -ItemType Directory -Force $env:HOME | Out-Null
+          & $hop completion install
+          & $hop uninstall -y
+          if ($LASTEXITCODE -ne 0) { throw 'hop uninstall failed' }
+          Start-Sleep 6
+          if (Test-Path $hop) { throw 'hop.exe still exists' }
+          if (Test-Path "$hop.old") { throw 'hop.exe.old was not cleaned up' }
+          Stop-Process $srv
+          Write-Host 'install, update and uninstall work on Windows'

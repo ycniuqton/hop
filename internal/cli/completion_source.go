@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/ycniuqton/hop/internal/cache"
@@ -42,7 +41,7 @@ func (processSpawner) Spawn(what RefreshTarget, args ...string) {
 		return
 	}
 	cmd := exec.Command(exe, append([]string{refreshCommandName, string(what)}, args...)...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	processSpawner{}.detach(cmd)
 	if cmd.Start() == nil {
 		_ = cmd.Process.Release()
 	}

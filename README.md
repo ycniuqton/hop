@@ -18,7 +18,15 @@ There is no server, daemon or account: every machine talks straight to the bucke
 curl -fsSL https://raw.githubusercontent.com/ycniuqton/hop/main/install.sh | sh
 ```
 
-This installs to `~/.local/bin`. Pipe to `sudo sh` to install to `/usr/local/bin` instead. Builds are available for Linux (amd64, arm64) and macOS (Apple Silicon).
+This installs to `~/.local/bin`. Pipe to `sudo sh` to install to `/usr/local/bin` instead. Builds are available for Linux (amd64, arm64), macOS (Apple Silicon) and Windows (amd64, arm64).
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/ycniuqton/hop/main/install.ps1 | iex
+```
+
+This installs `hop.exe` to `%LOCALAPPDATA%\Programs\hop` and adds that folder to your PATH; open a new terminal afterwards. WSL users can use the Linux command above instead.
 
 The installer reads a few environment variables:
 
@@ -189,6 +197,22 @@ Exit codes:
 | 5 | S3 auth or permission error |
 | 6 | Network error or timeout |
 | 130 | Interrupted (Ctrl-C) |
+
+## Windows notes
+
+- **In PowerShell, quote arguments that start with `@`.** PowerShell treats a leading `@` as its own syntax and rejects the line before hop runs. cmd.exe and WSL need nothing.
+
+  ```powershell
+  hop push dump.sql '@web-1'
+  hop cp db.sql '@:backups/'
+  hop ls '@web-1:backups/'
+  ```
+
+  Tab completion (`hop completion install`) inserts the escaping for you.
+- Paths inside the bucket always use `/` (`'@:backups/2026/db.sql'`). Local paths can use either `\` or `/`.
+- Config and cache live in `%USERPROFILE%\.config\hop` and `%USERPROFILE%\.cache\hop`, the same layout as on Linux and macOS.
+- `hop completion install` writes `%LOCALAPPDATA%\hop\completion.ps1` and prints the line to add to your `$PROFILE`.
+- `hop update` and `hop uninstall` work while `hop.exe` is running: the old file is moved aside and deleted afterwards.
 
 ## Using hop with AI agents
 
