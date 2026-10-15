@@ -169,8 +169,10 @@ func TestCompletionInstall(t *testing.T) {
 	m.vars[EnvVars.Shell] = "/usr/bin/zsh"
 	zshDir := m.path(".zsh/completions")
 	assert.Contains(t, m.ok("completion", "install"), "fpath=("+zshDir+" $fpath)")
-	m.vars[EnvVars.FPath] = "/usr/share/zsh:" + zshDir
-	assert.NotContains(t, m.ok("completion", "install"), "fpath=")
+	if runtime.GOOS != "windows" {
+		m.vars[EnvVars.FPath] = "/usr/share/zsh:" + zshDir
+		assert.NotContains(t, m.ok("completion", "install"), "fpath=", "FPATH is colon-separated, which clashes with C:")
+	}
 
 	m.vars[EnvVars.Shell] = "/usr/bin/fish"
 	assert.Contains(t, m.ok("completion", "install"), m.path(".config/fish/completions/hop.fish"))
