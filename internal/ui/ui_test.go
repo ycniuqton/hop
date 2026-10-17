@@ -121,3 +121,12 @@ func TestMenuDrawsInPlaceAndCollapses(t *testing.T) {
 	final := "\x1b[4A\r\x1b[2K\x1b[JStorage provider: Amazon S3\r\n"
 	assert.Equal(t, first+redraw+final, out)
 }
+
+func TestTableAlignsWithColor(t *testing.T) {
+	var plain, color bytes.Buffer
+	rows := [][]string{{"hot", "web-1", "3.0 MB"}, {"store", "web-1", "55 KB"}}
+	(&Console{Out: &plain}).Table([]string{"AREA", "NAME", "SIZE"}, rows)
+	(&Console{Out: &color, Color: true}).Table([]string{"AREA", "NAME", "SIZE"}, rows)
+	assert.Equal(t, "AREA   NAME   SIZE\nhot    web-1  3.0 MB\nstore  web-1  55 KB\n", plain.String())
+	assert.Equal(t, Style.Dim+"AREA   NAME   SIZE"+Style.Reset+"\nhot    web-1  3.0 MB\nstore  web-1  55 KB\n", color.String())
+}

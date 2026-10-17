@@ -32,5 +32,6 @@ func (c *MoveCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Move, Data: map[string]any{"files": res.Files}}, "moved %d file(s)", res.Files)
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Move, Data: map[string]any{"files": res.Files, "to": list[1].Ref()}},
+		"moved %d file(s) → %s", res.Files, list[1].Ref())
 }

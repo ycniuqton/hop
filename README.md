@@ -12,6 +12,8 @@ web-1$  hop ls @:logs/
 
 There is no server, daemon or account: every machine talks straight to the bucket with the same IAM keys.
 
+![hop: hand a file to another machine, then keep organized copies in the store](assets/demo-usage.gif)
+
 ## Install
 
 ```bash
@@ -60,6 +62,10 @@ hop init --print-policy --bucket my-hop
 ```
 
 **2. Create the workspace on the first machine.** Run `hop init` with no flags and answer the questions:
+
+![hop init with the provider menu, then a second machine joining](assets/demo-setup.gif)
+
+The recording uses a local S3-compatible server. With Bizfly Cloud you keep the default and paste your bucket URL:
 
 ```text
 $ hop init
@@ -123,7 +129,7 @@ hop completion install          # then open a new shell
 | Mode | Use it for | Names | Overwrites | Commands |
 | --- | --- | --- | --- | --- |
 | **Hot shelves** | Quick handoffs | Flat names | The same name replaces the old file | `push`, `pull`, `hot`, `keep` |
-| **Store** | Organized files | A folder tree per device | Only with `-f` | `cp`, `ls`, `mv`, `rm` |
+| **Store** | Organized files | A folder tree per device, plus one shared tree (`@@:`) | Only with `-f` | `cp`, `ls`, `mv`, `rm` |
 
 **The `@` rule** is the same in every command:
 
@@ -133,6 +139,8 @@ hop completion install          # then open a new shell
 | `@web-1` | web-1's shelf (hot commands) or web-1's folder root (store commands). |
 | `@` or `@me` | This machine. |
 | `@web-1:backups/db.sql` | A path inside web-1's store. |
+| `@@:docs/guide.md` | A path in the **shared store**: one folder tree every machine reads and writes. Files stay until removed. |
+| `@@` | The shared shelf, written out (the same as no `@` in hot commands). |
 
 ## Cheat sheet
 
@@ -161,6 +169,11 @@ hop cp @web-1:backups/2026-10.sql @db-1:restore/
 hop ls @web-1:backups/
 hop mv @web-1:a.sql @web-1:old/a.sql
 hop rm -r @web-1:old/
+
+# shared store: one tree for every machine
+hop cp -r ./docs @@:docs/
+hop ls -R @@:
+hop cp @@:docs/guide.md .
 
 # bridges
 hop keep dump.sql @:backups/      # hot → store (server-side copy)
@@ -206,6 +219,7 @@ Exit codes:
   hop push dump.sql '@web-1'
   hop cp db.sql '@:backups/'
   hop ls '@web-1:backups/'
+  hop cp guide.md '@@:docs/'
   ```
 
   Tab completion (`hop completion install`) inserts the escaping for you.
@@ -290,6 +304,8 @@ make test       # go vet + unit tests (-race)
 make e2e        # real binary against MinIO in Docker (testcontainers)
 make lint       # golangci-lint
 ```
+
+The README GIFs are scripted [VHS](https://github.com/charmbracelet/vhs) recordings (`demo/*.tape`) run against a local fake S3 server. After changing hop's output, regenerate them with `make demo` (needs `vhs`, `ttyd` and `ffmpeg`).
 
 Design notes and the build plan are in [`docs/systems/file-transfer/`](docs/systems/file-transfer/00000-init/). Choices the spec left open are recorded in [`DECISIONS.md`](DECISIONS.md).
 

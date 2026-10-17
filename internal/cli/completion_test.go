@@ -70,7 +70,7 @@ func TestCompletionTable(t *testing.T) {
 	}{
 		{"command tree", []string{"pu"}, []string{"pull", "push"}, dirNoFiles},
 		{"push local files", []string{"push", ""}, nil, cobra.ShellCompDirectiveDefault},
-		{"@ in a hot command", []string{"push", "dump.sql", "@"}, []string{"@", "@laptop", "@web-1"}, dirNoFiles},
+		{"@ in a hot command", []string{"push", "dump.sql", "@"}, []string{"@", "@@", "@laptop", "@web-1"}, dirNoFiles},
 		{"@ prefix narrows", []string{"pull", "@w"}, []string{"@web-1"}, dirNoFiles},
 		{"pull shared names", []string{"pull", ""}, []string{"dump.sql"}, dirNoFiles},
 		{"hot rm shared names", []string{"hot", "rm", ""}, []string{"dump.sql"}, dirNoFiles},
@@ -81,7 +81,7 @@ func TestCompletionTable(t *testing.T) {
 		{"store deeper", []string{"rm", "@web-1:backups/"}, []string{"@web-1:backups/db.sql"}, dirNoSpace},
 		{"mv store paths", []string{"mv", "@web-1:n"}, []string{"@web-1:notes.txt"}, dirNoSpace},
 		{"own store via @:", []string{"ls", "@:"}, nil, dirNoSpace},
-		{"device roots", []string{"ls", "@"}, []string{"@:", "@laptop:", "@web-1:"}, dirNoSpace},
+		{"device roots", []string{"ls", "@"}, []string{"@:", "@@:", "@laptop:", "@web-1:"}, dirNoSpace},
 		{"rename device names", []string{"rename", ""}, []string{"laptop", "web-1"}, dirNoFiles},
 		{"remove device names", []string{"remove", "w"}, []string{"web-1"}, dirNoFiles},
 		{"rename second arg", []string{"rename", "web-1", ""}, nil, dirNoFiles},
@@ -128,13 +128,13 @@ func TestCompletionStaleCacheSpawnsRefresh(t *testing.T) {
 
 	require.NoError(t, os.RemoveAll(filepath.Join(a.home, ".cache")))
 	a.now, rec.calls = time.Now, nil
-	assert.Equal(t, []string{"@"}, a.complete("push", "x", "@").items)
+	assert.Equal(t, []string{"@", "@@"}, a.complete("push", "x", "@").items)
 	assert.Equal(t, []string{"devices"}, rec.calls)
 
 	a.ok("__refresh", "devices")
 	a.ok("__refresh", "shelf", "web-1")
 	rec.calls = nil
-	assert.Equal(t, []string{"@", "@laptop", "@web-1"}, a.complete("push", "x", "@").items)
+	assert.Equal(t, []string{"@", "@@", "@laptop", "@web-1"}, a.complete("push", "x", "@").items)
 	assert.Equal(t, []string{"site.tar"}, a.complete("pull", "@web-1", "").items)
 	assert.Empty(t, rec.calls)
 }
@@ -149,7 +149,7 @@ func TestCompletionWriteThrough(t *testing.T) {
 
 func TestCompletionWithoutConfigIsSilent(t *testing.T) {
 	m := newMemoryHarness(t).machine("x")
-	assert.Equal(t, []string{"@"}, m.complete("push", "x", "@").items)
+	assert.Equal(t, []string{"@", "@@"}, m.complete("push", "x", "@").items)
 	assert.Empty(t, m.complete("pull", "").items)
 	assert.Empty(t, m.complete("ls", "@web-1:").items)
 }

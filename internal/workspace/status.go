@@ -3,6 +3,9 @@ package workspace
 import (
 	"context"
 	"sort"
+
+	"github.com/ycniuqton/hop/internal/naming"
+	"github.com/ycniuqton/hop/internal/target"
 )
 
 // StatusManager reports usage per shelf and per store folder.
@@ -24,6 +27,14 @@ type Usage struct {
 	Name    string `json:"name"`
 	Objects int    `json:"objects"`
 	Bytes   int64  `json:"bytes"`
+}
+
+// areaRefs is what follows @name for each area: store locations take a colon.
+var areaRefs = map[Area]string{AreaHot: "", AreaStore: target.Syntax.PathSep}
+
+// Ref is the @ spelling of a usage row: @@ or @web-1 for shelves, @@: or @web-1: for stores.
+func (u Usage) Ref() string {
+	return target.Syntax.DeviceMark + naming.Devices.Alias(u.Name) + areaRefs[u.Area]
 }
 
 // Usage lists hot shelves (shared first) and then each device's store.

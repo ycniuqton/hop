@@ -117,7 +117,7 @@ func (c Completer) remote(word string) []string {
 }
 
 func (c Completer) deviceMarks() []string {
-	out := []string{Syntax.Mark}
+	out := []string{Syntax.Mark, Syntax.Mark + naming.SharedAlias}
 	for _, d := range c.Src.Devices() {
 		out = append(out, Syntax.Mark+d)
 	}
@@ -125,7 +125,7 @@ func (c Completer) deviceMarks() []string {
 }
 
 func (c Completer) deviceRoots() []string {
-	out := []string{Syntax.Mark + Syntax.Sep}
+	out := []string{Syntax.Mark + Syntax.Sep, Syntax.Mark + naming.SharedAlias + Syntax.Sep}
 	for _, d := range c.Src.Devices() {
 		out = append(out, Syntax.Mark+d+Syntax.Sep)
 	}
@@ -136,7 +136,7 @@ func (c Completer) resolve(name string) string {
 	if name == "" || name == Syntax.Self {
 		return c.Src.Self()
 	}
-	return name
+	return naming.Devices.Resolve(name)
 }
 
 func (c Completer) shelfOf(args []string) string {

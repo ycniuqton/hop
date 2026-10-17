@@ -30,10 +30,11 @@ func (c *CopyCommand) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, err := svc.Store.Copy(ctx, list[:len(list)-1], list[len(list)-1], c.opt)
+	dst := list[len(list)-1]
+	res, err := svc.Store.Copy(ctx, list[:len(list)-1], dst, c.opt)
 	if err != nil {
 		return err
 	}
-	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Copy, Data: map[string]any{"files": res.Files, "bytes": res.Bytes}},
-		"copied %d file(s) (%s)", res.Files, ui.Size(res.Bytes))
+	return c.env.Console.Done(ui.Outcome{Action: ui.Actions.Copy, Data: map[string]any{"files": res.Files, "bytes": res.Bytes, "to": dst.Ref()}},
+		"copied %d file(s) → %s (%s)", res.Files, dst.Ref(), ui.Size(res.Bytes))
 }

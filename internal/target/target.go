@@ -26,7 +26,8 @@ var Syntax = struct {
 	DirSuffix  string
 	ParentDir  string
 	LocalHint  string
-}{DeviceMark: "@", PathSep: ":", DirSuffix: "/", ParentDir: "..", LocalHint: "./"}
+	ListSep    string
+}{DeviceMark: "@", PathSep: ":", DirSuffix: "/", ParentDir: "..", LocalHint: "./", ListSep: ", "}
 
 // Target is one parsed argument.
 type Target struct {
@@ -35,6 +36,22 @@ type Target struct {
 	Device string
 	Path   string
 	Dir    bool
+}
+
+// Ref is the resolved spelling for messages: @ and @me become the device name, so a typo between
+// @: (this machine) and @@: (shared) shows in the output. Local paths stay as typed.
+func (t Target) Ref() string {
+	if t.Kind == Local {
+		return t.Raw
+	}
+	ref := Syntax.DeviceMark + naming.Devices.Alias(t.Device)
+	if t.Kind == Device {
+		return ref
+	}
+	if t.Dir && t.Path != "" {
+		return ref + Syntax.PathSep + t.Path + Syntax.DirSuffix
+	}
+	return ref + Syntax.PathSep + t.Path
 }
 
 // Parser resolves @ and @me against the configured device.
@@ -68,6 +85,9 @@ func (p Parser) Parse(arg string) (Target, error) {
 func (p Parser) resolveDevice(name string) (string, error) {
 	if name == "" || name == naming.SelfAlias {
 		return p.Self, nil
+	}
+	if name == naming.SharedAlias {
+		return naming.Devices.Resolve(name), nil
 	}
 	return name, naming.Devices.Validate(name)
 }

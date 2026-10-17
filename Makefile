@@ -2,7 +2,7 @@ BINARY  := bin/hop
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build test e2e lint clean
+.PHONY: build test e2e lint demo clean
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/hop
@@ -16,6 +16,9 @@ e2e: build
 
 lint:
 	golangci-lint run ./...
+
+demo:
+	./demo/record.sh
 
 clean:
 	rm -rf bin

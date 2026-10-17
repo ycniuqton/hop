@@ -19,7 +19,7 @@ type DeviceRules struct {
 // Devices is the device naming policy from spec section 3.
 var Devices = DeviceRules{
 	pattern:  regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,31}$`),
-	reserved: map[string]bool{SharedShelf: true, SelfAlias: true},
+	reserved: map[string]bool{SharedShelf: true, SelfAlias: true, SharedAlias: true},
 	maxLen:   32,
 	fallback: "device",
 }
@@ -29,7 +29,25 @@ const (
 	SharedShelf = "_shared"
 	// SelfAlias is the reserved spelling of "this device" in @ targets.
 	SelfAlias = "me"
+	// SharedAlias is the @ spelling of the shared area: @@ is the shared shelf, @@: the shared store.
+	SharedAlias = "@"
 )
+
+// Alias is how a device or the shared area is written after @ ("_shared" → "@").
+func (r DeviceRules) Alias(name string) string {
+	if name == SharedShelf {
+		return SharedAlias
+	}
+	return name
+}
+
+// Resolve turns an @ spelling into the stored name ("@" → "_shared").
+func (r DeviceRules) Resolve(name string) string {
+	if name == SharedAlias {
+		return SharedShelf
+	}
+	return name
+}
 
 // Validate rejects malformed or reserved device names.
 func (r DeviceRules) Validate(name string) error {
