@@ -148,8 +148,8 @@ func (c *StatusCommand) Run(ctx context.Context, _ []string) error {
 	}
 	rows := make([][]string, len(usage))
 	for i, u := range usage {
-		rows[i] = []string{string(u.Area), u.Name, ui.Size(u.Bytes), strconv.Itoa(u.Objects)}
+		rows[i] = []string{string(u.Area), u.Ref(), ui.Size(u.Bytes), strconv.Itoa(u.Objects)}
 	}
-	c.env.Console.Table([]string{"AREA", "NAME", "SIZE", "OBJECTS"}, rows)
+	c.env.Console.Table([]string{"AREA", "WHERE", "SIZE", "OBJECTS"}, rows)
 	return nil
 }

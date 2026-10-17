@@ -41,6 +41,7 @@ hop devices --json       # machines in the workspace: [{name, hostname, last_see
 - no `@` → the shared shelf (hot commands); a local path (store commands)
 - `@web-1` → web-1's shelf (hot) · `@` or `@me` → this machine
 - `@web-1:backups/db.sql` → a path in web-1's store · `@:` → this machine's store root
+- `@@:docs/x.md` → the shared store, one tree every machine reads and writes · `@@` → the shared shelf
 - Folders end with `/`. A destination ending in `/` keeps the source name.
 
 ## Recipes
@@ -60,6 +61,10 @@ hop ls -R @:logs/ --json
 # fetch from another machine's store; copy between stores without downloading
 hop cp @web-1:backups/db.sql ./db.sql --json
 hop cp @web-1:backups/db.sql @db-1:restore/ --json
+
+# files every machine should find in one place (not tied to a device)
+hop cp ./guide.md @@:docs/ --json
+hop ls -R @@: --json
 
 # hot ↔ store bridges
 hop keep dump.sql @:backups/ --json            # shared shelf → my store

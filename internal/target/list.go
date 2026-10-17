@@ -1,6 +1,8 @@
 package target
 
 import (
+	"strings"
+
 	"github.com/ycniuqton/hop/internal/apperr"
 )
 
@@ -43,6 +45,15 @@ func (l List) ForStore() (List, error) {
 		}
 	}
 	return l, nil
+}
+
+// Refs joins every target's Ref for one-line messages.
+func (l List) Refs() string {
+	refs := make([]string, len(l))
+	for i, t := range l {
+		refs[i] = t.Ref()
+	}
+	return strings.Join(refs, Syntax.ListSep)
 }
 
 // Devices returns the distinct device names referenced, for validation against the device list.

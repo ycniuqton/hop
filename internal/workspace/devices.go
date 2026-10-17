@@ -60,9 +60,9 @@ func (m *DeviceManager) Get(ctx context.Context, name string) (Device, error) {
 	return d, err
 }
 
-// Resolve checks that a device exists: cache first, S3 on a cache miss.
+// Resolve checks that a device exists: cache first, S3 on a cache miss; the shared area always exists.
 func (m *DeviceManager) Resolve(ctx context.Context, name string) error {
-	if name == m.ws.Self || m.cachedNames().has(name) {
+	if name == m.ws.Self || name == naming.SharedShelf || m.cachedNames().has(name) {
 		return nil
 	}
 	_, err := m.ws.Storage.Head(ctx, m.ws.Layout.DeviceKey(name))

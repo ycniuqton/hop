@@ -3,6 +3,7 @@ package ui
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -123,21 +124,24 @@ func (c *Console) Report(o Outcome) error {
 	return c.PrintJSON(doc)
 }
 
-// Table prints aligned columns with a dim header on color terminals.
+// Table prints aligned columns with a dim header on color terminals; columns are laid out before
+// the header is dimmed, so the escape codes never count as width.
 func (c *Console) Table(headers []string, rows [][]string) {
 	if c.Quiet {
 		return
 	}
-	w := tabwriter.NewWriter(c.Out, 0, 0, 2, ' ', 0)
-	header := strings.Join(headers, "\t")
-	if c.Color {
-		header = Style.Dim + header + Style.Reset
-	}
-	fmt.Fprintln(w, header)
+	var buf bytes.Buffer
+	w := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, strings.Join(headers, "\t"))
 	for _, r := range rows {
 		fmt.Fprintln(w, strings.Join(r, "\t"))
 	}
 	_ = w.Flush()
+	header, body, _ := strings.Cut(buf.String(), "\n")
+	if c.Color {
+		header = Style.Dim + header + Style.Reset
+	}
+	fmt.Fprint(c.Out, header+"\n"+body)
 }
 
 // CanPrompt is true only when stdin is a terminal.

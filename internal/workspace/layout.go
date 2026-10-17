@@ -91,8 +91,8 @@ func (s Shelf) Label() string {
 	return "@" + string(s) + "'s shelf"
 }
 
-// RemoteRef is the @device:path spelling of a store location.
-func RemoteRef(device, p string) string { return "@" + device + ":" + p }
+// RemoteRef is the @device:path spelling of a store location (@@:path for the shared store).
+func RemoteRef(device, p string) string { return "@" + naming.Devices.Alias(device) + ":" + p }
 
 // String is the normalized prefix ("" or "name/").
 func (l Layout) String() string { return l.prefix }
