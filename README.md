@@ -16,15 +16,19 @@ There is no server, daemon or account: every machine talks straight to the bucke
 
 Two machines side by side: **server-1** on the left, **server-2** on the right.
 
-**1. Hand a file over (hot shelf).** server-1 pushes by name, server-2 pulls by name. No paths, no machine names.
+**1. Set up (once).** server-1 runs `hop init` and `hop invite`; server-2 pastes the code into `hop join`.
+
+![server-1 runs hop init with the provider menu and hop invite; server-2 pastes the code into hop join](assets/demo-setup.gif)
+
+**2. Hand a file over (hot shelf).** server-1 pushes by name, server-2 pulls by name. No paths, no machine names.
 
 ![server-1 pushes dump.sql, server-2 lists the shelf and pulls it](assets/demo-hot.gif)
 
-**2. Keep organized files (store).** server-1 copies a folder into server-2's store; server-2 lists and downloads it.
+**3. Keep organized files (store).** server-1 copies a folder into server-2's store; server-2 lists and downloads it.
 
 ![server-1 copies logs into server-2's store; server-2 lists and downloads them](assets/demo-store.gif)
 
-**3. One place for everyone (`@@:`).** server-1 puts docs in the global space; server-2 lists and fetches one.
+**4. One place for everyone (`@@:`).** server-1 puts docs in the global space; server-2 lists and fetches one.
 
 ![server-1 copies docs to the global space @@:, server-2 lists and downloads one](assets/demo-shared.gif)
 
@@ -75,9 +79,7 @@ go install github.com/ycniuqton/hop/cmd/hop@latest
 hop init --print-policy --bucket my-hop
 ```
 
-**2. Create the workspace on the first machine.** Run `hop init` with no flags and answer the questions:
-
-![server-1 runs hop init with the provider menu and hop invite; server-2 pastes the code into hop join](assets/demo-setup.gif)
+**2. Create the workspace on the first machine.** Run `hop init` with no flags and answer the questions (shown in [demo 1](#see-it)).
 
 The recording uses a local S3-compatible server. With Bizfly Cloud you keep the default and paste your bucket URL:
 
