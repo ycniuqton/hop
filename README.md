@@ -6,13 +6,27 @@ Move files between your own machines through one S3 bucket.
 laptop$ hop push dump.sql @web-1          # hand a file to web-1
 web-1$  hop pull dump.sql @               # pick it up
 
-laptop$ hop cp -r ./logs @web-1:logs/     # or keep organized files with real paths
+laptop$ hop cp -r ./logs @web-1:          # or keep organized files with real paths
 web-1$  hop ls @:logs/
 ```
 
 There is no server, daemon or account: every machine talks straight to the bucket with the same IAM keys.
 
-![hop: hand a file to another machine, then keep organized copies in the store](assets/demo-usage.gif)
+## See it
+
+Two machines side by side: **server-1** on the left, **server-2** on the right.
+
+**1. Hand a file over (hot shelf).** server-1 pushes, server-2 sees it and pulls it.
+
+![server-1 pushes dump.sql to server-2, which lists and pulls it](assets/demo-hot.gif)
+
+**2. Keep organized files (store).** server-1 copies a folder into server-2's store; server-2 lists and downloads it.
+
+![server-1 copies logs into server-2's store; server-2 lists and downloads them](assets/demo-store.gif)
+
+**3. One place for everyone (`@@:`).** server-1 puts docs in the global space; server-2 lists and fetches one.
+
+![server-1 copies docs to the global space @@:, server-2 lists and downloads one](assets/demo-shared.gif)
 
 ## Install
 
@@ -63,7 +77,7 @@ hop init --print-policy --bucket my-hop
 
 **2. Create the workspace on the first machine.** Run `hop init` with no flags and answer the questions:
 
-![hop init with the provider menu, then a second machine joining](assets/demo-setup.gif)
+![server-1 runs hop init with the provider menu and hop invite; server-2 pastes the code into hop join](assets/demo-setup.gif)
 
 The recording uses a local S3-compatible server. With Bizfly Cloud you keep the default and paste your bucket URL:
 
@@ -163,7 +177,7 @@ hop hot / hop hot @ / hop hot --all
 # store: paths
 hop cp db.sql @:backups/
 hop cp db.sql @web-1:backups/2026-10.sql
-hop cp -r ./logs @web-1:logs/
+hop cp -r ./logs @web-1:           # → @web-1:logs/… (a dest ending in / or : is a folder to copy into)
 hop cp @web-1:backups/2026-10.sql .
 hop cp @web-1:backups/2026-10.sql @db-1:restore/
 hop ls @web-1:backups/
@@ -171,7 +185,7 @@ hop mv @web-1:a.sql @web-1:old/a.sql
 hop rm -r @web-1:old/
 
 # shared store: one tree for every machine
-hop cp -r ./docs @@:docs/
+hop cp -r ./docs @@:               # → @@:docs/…
 hop ls -R @@:
 hop cp @@:docs/guide.md .
 
@@ -305,7 +319,7 @@ make e2e        # real binary against MinIO in Docker (testcontainers)
 make lint       # golangci-lint
 ```
 
-The README GIFs are scripted [VHS](https://github.com/charmbracelet/vhs) recordings (`demo/*.tape`) run against a local fake S3 server. After changing hop's output, regenerate them with `make demo` (needs `vhs`, `ttyd` and `ffmpeg`).
+The README GIFs are scripted [VHS](https://github.com/charmbracelet/vhs) recordings (`demo/*.tape`) run against a local fake S3 server. After changing hop's output, regenerate them with `make demo` (needs `vhs`, `ttyd`, `ffmpeg` and `tmux`). Each scene runs two simulated machines in a tmux split screen.
 
 Design notes and the build plan are in [`docs/systems/file-transfer/`](docs/systems/file-transfer/00000-init/). Choices the spec left open are recorded in [`DECISIONS.md`](DECISIONS.md).
 

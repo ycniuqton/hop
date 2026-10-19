@@ -28,5 +28,12 @@ States: `[ ]` todo · `[~]` in progress · `[x]` done. Carried over: all earlier
 - [x] README demo GIFs re-recorded with the new output
 
 ## S6 — Release v0.5.0
-- [~] Commit and push
-- [ ] CI green, tag v0.5.0, verify assets and install
+- [x] Commit and push
+- [x] CI green, tag v0.5.0, verify assets and install
+
+## S7 — Two-machine README demos (added after v0.5.0)
+- [x] tmux split screen inside VHS: panes titled server-1 / server-2 (`demo/split.sh`, `demo/tmux.conf`, `demo/pane.rc`)
+- [x] Scenes: hot push/pull, device store, global space `@@:`, setup (init → invite → paste code → join)
+- [x] Replace `demo/usage.tape` with the three scenes; README "See it" section
+- [x] Fix folder-copy examples (`hop cp -r ./logs @web-1:` → `@web-1:logs/…`) in README, `cp --help`, skill
+- [x] No real hostname in the GIFs (`hop whoami` instead of `hop devices`)

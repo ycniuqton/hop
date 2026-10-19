@@ -55,7 +55,7 @@ hop hot @ --json
 hop pull dump.sql @ ./dump.sql --rm --json
 
 # back up a folder into this machine's store, then list it
-hop cp -r ./logs @:logs/ --json
+hop cp -r ./logs @: --json        # lands at @:logs/… (a dest ending in / or : is a folder)
 hop ls -R @:logs/ --json
 
 # fetch from another machine's store; copy between stores without downloading

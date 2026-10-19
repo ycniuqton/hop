@@ -18,7 +18,7 @@ type CopyCommand struct {
 func (c *CopyCommand) Build(env *Env) *cobra.Command {
 	c.env = env
 	cmd := &cobra.Command{Use: "cp [-r] [-f] <src>... <dst>", Short: "Copy files to, from or between device stores", GroupID: string(GroupStore),
-		Example: "  hop cp db.sql @:backups/\n  hop cp -r ./logs @web-1:logs/\n  hop cp @web-1:backups/2026-10.sql .\n  hop cp @web-1:backups/2026-10.sql @db-1:restore/"}
+		Example: "  hop cp db.sql @:backups/\n  hop cp -r ./logs @web-1:        # → @web-1:logs/...\n  hop cp @web-1:backups/2026-10.sql .\n  hop cp @web-1:backups/2026-10.sql @db-1:restore/"}
 	cmd.Flags().BoolVarP(&c.opt.Recursive, "recursive", "r", false, "copy folders")
 	cmd.Flags().BoolVarP(&c.opt.Force, "force", "f", false, "overwrite existing files")
 	cmd.ValidArgsFunction = env.completer().Store(true)
