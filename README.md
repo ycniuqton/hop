@@ -3,8 +3,8 @@
 Move files between your own machines through one S3 bucket.
 
 ```bash
-laptop$ hop push dump.sql @web-1          # hand a file to web-1
-web-1$  hop pull dump.sql @               # pick it up
+laptop$ hop push dump.sql                 # put a file on the shelf
+web-1$  hop pull dump.sql                 # pick it up on any machine
 
 laptop$ hop cp -r ./logs @web-1:          # or keep organized files with real paths
 web-1$  hop ls @:logs/
@@ -16,9 +16,9 @@ There is no server, daemon or account: every machine talks straight to the bucke
 
 Two machines side by side: **server-1** on the left, **server-2** on the right.
 
-**1. Hand a file over (hot shelf).** server-1 pushes, server-2 sees it and pulls it.
+**1. Hand a file over (hot shelf).** server-1 pushes by name, server-2 pulls by name. No paths, no machine names.
 
-![server-1 pushes dump.sql to server-2, which lists and pulls it](assets/demo-hot.gif)
+![server-1 pushes dump.sql, server-2 lists the shelf and pulls it](assets/demo-hot.gif)
 
 **2. Keep organized files (store).** server-1 copies a folder into server-2's store; server-2 lists and downloads it.
 
