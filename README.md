@@ -130,7 +130,10 @@ hop join hop1:… --name web-1
 **4. Move files:**
 
 ```bash
-hop push dump.sql @web-1        # laptop → web-1's shelf
+hop push dump.sql               # on laptop: put it on the shared shelf
+hop pull dump.sql               # on web-1: take it
+
+hop push dump.sql @web-1        # only for web-1 (its own shelf)
 hop pull dump.sql @             # on web-1: take it from my shelf
 ```
 
