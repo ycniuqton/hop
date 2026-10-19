@@ -1,5 +1,5 @@
 # hop hot-shelf demo: server-1 pushes a file by name, server-2 pulls it by name. Render with ./demo/record.sh
-Output assets/demo-hot.gif
+Output assets/demo-push-pull.gif
 
 Require hop
 Require tmux

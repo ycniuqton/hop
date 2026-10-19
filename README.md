@@ -22,7 +22,7 @@ Two machines side by side: **server-1** on the left, **server-2** on the right.
 
 **2. Hand a file over (hot shelf).** server-1 pushes by name, server-2 pulls by name. No paths, no machine names.
 
-![server-1 pushes dump.sql, server-2 lists the shelf and pulls it](assets/demo-hot.gif)
+![server-1 pushes dump.sql, server-2 lists the shelf and pulls it](assets/demo-push-pull.gif)
 
 **3. Keep organized files (store).** server-1 copies a folder into server-2's store; server-2 lists and downloads it.
 
